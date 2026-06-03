@@ -47,11 +47,13 @@ document.addEventListener("DOMContentLoaded", () => {
   startCountdown();
   renderRSVPTable();
 
-  // Show edit cog if ?edit=true or ?admin=true is in URL query parameters
+  // Show edit cog and share button if ?edit=true or ?admin=true is in URL query parameters
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has("edit") || urlParams.has("admin")) {
     const editBtn = document.getElementById("edit-btn");
     if (editBtn) editBtn.style.display = "flex";
+    const shareBtn = document.getElementById("share-btn");
+    if (shareBtn) shareBtn.style.display = "flex";
   }
 });
 
