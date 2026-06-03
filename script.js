@@ -1677,8 +1677,7 @@ function setupShareEventListeners() {
   const smsBtn = document.getElementById("share-sms-btn");
   if (smsBtn) {
     smsBtn.addEventListener("click", () => {
-      const shareUrl = getCleanShareUrl();
-      const textMessage = `Sofia & Russell's Wedding Save the Date! ${shareUrl}`;
+      const textMessage = "Sofia & Russell's Wedding Save the Date! 📅 October 8, 2026. View details and RSVP at: https://sofiaandrussellaregettingmarried.vercel.app/";
       window.open(`sms:?&body=${encodeURIComponent(textMessage)}`, "_blank");
     });
   }
@@ -1687,9 +1686,8 @@ function setupShareEventListeners() {
   const emailBtn = document.getElementById("share-email-btn");
   if (emailBtn) {
     emailBtn.addEventListener("click", () => {
-      const shareUrl = getCleanShareUrl();
       const subject = "Save the Date: Sofia & Russell's Wedding! 💌";
-      const bodyMessage = `Hi! We are so excited to invite you to our wedding celebration! Click the link below to view our save-the-date card, countdown, and RSVP:\n\n${shareUrl}`;
+      const bodyMessage = "Sofia & Russell's Wedding Save the Date! 📅 October 8, 2026. View details and RSVP at: https://sofiaandrussellaregettingmarried.vercel.app/";
       window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyMessage)}`, "_blank");
     });
   }
