@@ -17,6 +17,11 @@ let masterGain = null;
 let isAudioPlaying = false;
 let loopTimer = null;
 let scheduledNodes = [];
+let delayNodeL = null;
+let delayNodeR = null;
+let feedbackGainL = null;
+let feedbackGainR = null;
+
 
 
 // Canvas Particles
@@ -481,6 +486,51 @@ function initAudioContext() {
     masterGain = audioCtx.createGain();
     masterGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
     masterGain.connect(audioCtx.destination);
+
+    // Create Stereo Cathedral Echo/Reverb Delays
+    delayNodeL = audioCtx.createDelay(1.0);
+    delayNodeR = audioCtx.createDelay(1.0);
+    
+    // 350ms delay for Left, 500ms delay for Right
+    delayNodeL.delayTime.setValueAtTime(0.35, audioCtx.currentTime);
+    delayNodeR.delayTime.setValueAtTime(0.50, audioCtx.currentTime);
+    
+    feedbackGainL = audioCtx.createGain();
+    feedbackGainR = audioCtx.createGain();
+    
+    // Lush, long feedback tail (feedback = 0.45)
+    feedbackGainL.gain.setValueAtTime(0.45, audioCtx.currentTime);
+    feedbackGainR.gain.setValueAtTime(0.45, audioCtx.currentTime);
+    
+    // Cross-feed feedback loops (Ping-Pong Delay) for massive stereo space
+    delayNodeL.connect(feedbackGainL);
+    feedbackGainL.connect(delayNodeR); // L feeds R
+    
+    delayNodeR.connect(feedbackGainR);
+    feedbackGainR.connect(delayNodeL); // R feeds L
+    
+    // Pan the delay outputs to opposite sides
+    const panDelayL = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+    const panDelayR = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+    
+    const delayDryWet = audioCtx.createGain();
+    delayDryWet.gain.setValueAtTime(0.22, audioCtx.currentTime); // 22% wet delay signal
+
+    if (panDelayL && panDelayR) {
+      panDelayL.pan.setValueAtTime(-0.8, audioCtx.currentTime);
+      panDelayR.pan.setValueAtTime(0.8, audioCtx.currentTime);
+      
+      delayNodeL.connect(panDelayL);
+      panDelayL.connect(delayDryWet);
+      
+      delayNodeR.connect(panDelayR);
+      panDelayR.connect(delayDryWet);
+    } else {
+      delayNodeL.connect(delayDryWet);
+      delayNodeR.connect(delayDryWet);
+    }
+    
+    delayDryWet.connect(masterGain);
   } catch (err) {
     console.error("Failed to initialize Web Audio API:", err);
   }
@@ -489,41 +539,90 @@ function initAudioContext() {
 function triggerChimeNoteScheduled(freq, startTime, duration) {
   if (!audioCtx) return null;
 
-  // Fundamental oscillator (sine)
-  const osc1 = audioCtx.createOscillator();
+  // Create oscillators for fundamental, detuned chorus, and sweet overtones
+  const osc1 = audioCtx.createOscillator(); // Fundamental Left
+  const osc1_detune = audioCtx.createOscillator(); // Fundamental Right (detuned for chorus width)
+  const osc2 = audioCtx.createOscillator(); // Overtone 2 (Octave above)
+  const osc3 = audioCtx.createOscillator(); // Overtone 3 (Octave + Fifth above)
+  const osc4 = audioCtx.createOscillator(); // Overtone 4 (Double octave above)
+
   osc1.type = "sine";
   osc1.frequency.setValueAtTime(freq, startTime);
 
-  // Overtone oscillator (sine at 4x frequency for metallic tine resonance)
-  const osc2 = audioCtx.createOscillator();
+  osc1_detune.type = "sine";
+  osc1_detune.frequency.setValueAtTime(freq * 1.003, startTime); // detuned
+
   osc2.type = "sine";
-  osc2.frequency.setValueAtTime(freq * 4.0, startTime);
+  osc2.frequency.setValueAtTime(freq * 2.0, startTime);
 
-  // Envelope for fundamental note
-  const noteGain = audioCtx.createGain();
-  noteGain.gain.setValueAtTime(0, startTime);
-  noteGain.gain.linearRampToValueAtTime(0.15, startTime + 0.003);
-  noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + Math.min(duration, 1.2));
+  osc3.type = "sine";
+  osc3.frequency.setValueAtTime(freq * 3.0, startTime);
 
-  // Envelope for overtone
-  const overtoneGain = audioCtx.createGain();
-  overtoneGain.gain.setValueAtTime(0, startTime);
-  overtoneGain.gain.linearRampToValueAtTime(0.02, startTime + 0.003);
-  overtoneGain.gain.exponentialRampToValueAtTime(0.0001, startTime + Math.min(duration * 0.5, 0.4));
+  osc4.type = "sine";
+  osc4.frequency.setValueAtTime(freq * 4.0, startTime);
 
-  osc1.connect(noteGain);
-  osc2.connect(overtoneGain);
+  // Gains
+  const gainL = audioCtx.createGain();
+  const gainR = audioCtx.createGain();
 
-  noteGain.connect(masterGain);
-  overtoneGain.connect(masterGain);
+  // Smooth attack and long, elegant exponential release decay
+  gainL.gain.setValueAtTime(0, startTime);
+  gainL.gain.linearRampToValueAtTime(0.12, startTime + 0.012); // smooth attack
+  gainL.gain.exponentialRampToValueAtTime(0.0001, startTime + Math.max(duration * 1.5, 2.5));
 
+  gainR.gain.setValueAtTime(0, startTime);
+  gainR.gain.linearRampToValueAtTime(0.12, startTime + 0.012); // smooth attack
+  gainR.gain.exponentialRampToValueAtTime(0.0001, startTime + Math.max(duration * 1.5, 2.5));
+
+  // Stereo panning for lush auditory image
+  const panL = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+  const panR = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+  if (panL) panL.pan.setValueAtTime(-0.35, startTime);
+  if (panR) panR.pan.setValueAtTime(0.35, startTime);
+
+  // Connect Left channel
+  osc1.connect(gainL);
+  osc2.connect(gainL);
+  
+  if (panL) {
+    gainL.connect(panL);
+    panL.connect(masterGain);
+    if (delayNodeL) panL.connect(delayNodeL);
+  } else {
+    gainL.connect(masterGain);
+    if (delayNodeL) gainL.connect(delayNodeL);
+  }
+
+  // Connect Right channel
+  osc1_detune.connect(gainR);
+  osc3.connect(gainR);
+  osc4.connect(gainR);
+  
+  if (panR) {
+    gainR.connect(panR);
+    panR.connect(masterGain);
+    if (delayNodeR) panR.connect(delayNodeR);
+  } else {
+    gainR.connect(masterGain);
+    if (delayNodeR) gainR.connect(delayNodeR);
+  }
+
+  // Start nodes
   osc1.start(startTime);
+  osc1_detune.start(startTime);
   osc2.start(startTime);
+  osc3.start(startTime);
+  osc4.start(startTime);
 
-  osc1.stop(startTime + Math.min(duration, 1.3));
-  osc2.stop(startTime + Math.min(duration, 1.3));
+  // Stop nodes slightly after the decay envelope finishes
+  const stopTime = startTime + 3.0;
+  osc1.stop(stopTime);
+  osc1_detune.stop(stopTime);
+  osc2.stop(stopTime);
+  osc3.stop(stopTime);
+  osc4.stop(stopTime);
 
-  return [osc1, osc2];
+  return [osc1, osc1_detune, osc2, osc3, osc4];
 }
 
 function scheduleMelodyLoop(startTime) {
