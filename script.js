@@ -1658,7 +1658,8 @@ function setupShareEventListeners() {
   if (smsBtn) {
     smsBtn.addEventListener("click", () => {
       const shareUrl = getCleanShareUrl();
-      window.open(`sms:?&body=${encodeURIComponent(shareUrl)}`, "_blank");
+      const textMessage = `Sofia & Russell's Wedding Save the Date! ${shareUrl}`;
+      window.open(`sms:?&body=${encodeURIComponent(textMessage)}`, "_blank");
     });
   }
 
