@@ -563,35 +563,44 @@ const CELLO_LINE = [
 const LOOP_DURATION_BEATS = 32;
 
 function createCathedralImpulseResponse(audioCtx, duration = 3.6, decay = 2.4) {
-  const sampleRate = audioCtx.sampleRate;
-  const length = sampleRate * duration;
-  const impulse = audioCtx.createBuffer(2, length, sampleRate);
-  const left = impulse.getChannelData(0);
-  const right = impulse.getChannelData(1);
-
-  let lastOutL = 0;
-  let lastOutR = 0;
-
-  for (let i = 0; i < length; i++) {
-    // Generate stereo de-correlated white noise
-    const noiseL = Math.random() * 2 - 1;
-    const noiseR = Math.random() * 2 - 1;
-    
-    // Exponential envelope decay
-    const envelope = Math.exp(-i / (sampleRate * (decay / 6.0)));
-    
-    // Simulate high-frequency absorption over time using a 1-pole lowpass filter
-    // that gets progressively dampening as the tail decays
-    const progress = i / length;
-    const alpha = 0.04 + 0.92 * progress;
-    
-    lastOutL = (1 - alpha) * lastOutL + alpha * noiseL;
-    lastOutR = (1 - alpha) * lastOutR + alpha * noiseR;
-
-    left[i] = lastOutL * envelope * 0.70;
-    right[i] = lastOutR * envelope * 0.70;
+  let sampleRate = audioCtx.sampleRate || 44100;
+  if (isNaN(sampleRate) || sampleRate <= 0) {
+    sampleRate = 44100;
   }
-  return impulse;
+  const length = Math.max(1000, Math.floor(sampleRate * duration));
+
+  try {
+    const impulse = audioCtx.createBuffer(2, length, sampleRate);
+    const left = impulse.getChannelData(0);
+    const right = impulse.getChannelData(1);
+
+    let lastOutL = 0;
+    let lastOutR = 0;
+
+    for (let i = 0; i < length; i++) {
+      // Generate stereo de-correlated white noise
+      const noiseL = Math.random() * 2 - 1;
+      const noiseR = Math.random() * 2 - 1;
+      
+      // Exponential envelope decay
+      const envelope = Math.exp(-i / (sampleRate * (decay / 6.0)));
+      
+      // Simulate high-frequency absorption over time using a 1-pole lowpass filter
+      // that gets progressively dampening as the tail decays
+      const progress = i / length;
+      const alpha = 0.04 + 0.92 * progress;
+      
+      lastOutL = (1 - alpha) * lastOutL + alpha * noiseL;
+      lastOutR = (1 - alpha) * lastOutR + alpha * noiseR;
+
+      left[i] = lastOutL * envelope * 0.70;
+      right[i] = lastOutR * envelope * 0.70;
+    }
+    return impulse;
+  } catch (err) {
+    console.error("Failed to create impulse response buffer:", err);
+    return null;
+  }
 }
 
 function initAudioContext() {
@@ -612,7 +621,10 @@ function initAudioContext() {
 
     // 1. Setup Procedural Cathedral Convolution Reverb Send Effect
     convolverNode = audioCtx.createConvolver();
-    convolverNode.buffer = createCathedralImpulseResponse(audioCtx, 4.0, 2.8);
+    const impulseBuffer = createCathedralImpulseResponse(audioCtx, 4.0, 2.8);
+    if (impulseBuffer) {
+      convolverNode.buffer = impulseBuffer;
+    }
 
     preDelayNode = audioCtx.createDelay(0.5);
     preDelayNode.delayTime.setValueAtTime(0.050, audioCtx.currentTime); // 50ms pre-delay
@@ -940,33 +952,42 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
   const stopTime = startTime + duration + releaseTime + 0.1;
 
   // 2. Synthesize Bow Scrape Noise Transient (~70ms bandpass white noise burst)
-  const noiseLength = audioCtx.sampleRate * 0.07;
-  const noiseBuffer = audioCtx.createBuffer(1, noiseLength, audioCtx.sampleRate);
-  const noiseData = noiseBuffer.getChannelData(0);
-  for (let i = 0; i < noiseLength; i++) {
-    noiseData[i] = Math.random() * 2 - 1;
+  let sampleRate = audioCtx.sampleRate || 44100;
+  if (isNaN(sampleRate) || sampleRate <= 0) {
+    sampleRate = 44100;
   }
+  const noiseLength = Math.max(100, Math.floor(sampleRate * 0.07));
+  
+  try {
+    const noiseBuffer = audioCtx.createBuffer(1, noiseLength, sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseLength; i++) {
+      noiseData[i] = Math.random() * 2 - 1;
+    }
 
-  const noiseNode = audioCtx.createBufferSource();
-  noiseNode.buffer = noiseBuffer;
+    const noiseNode = audioCtx.createBufferSource();
+    noiseNode.buffer = noiseBuffer;
 
-  const noiseFilter = audioCtx.createBiquadFilter();
-  noiseFilter.type = "bandpass";
-  noiseFilter.frequency.setValueAtTime(1100, startTime);
-  noiseFilter.Q.setValueAtTime(1.5, startTime);
+    const noiseFilter = audioCtx.createBiquadFilter();
+    noiseFilter.type = "bandpass";
+    noiseFilter.frequency.setValueAtTime(1100, startTime);
+    noiseFilter.Q.setValueAtTime(1.5, startTime);
 
-  const noiseGain = audioCtx.createGain();
-  noiseGain.gain.setValueAtTime(0, startTime);
-  noiseGain.gain.linearRampToValueAtTime(instrumentGain * 0.14, startTime + 0.005);
-  noiseGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.06);
+    const noiseGain = audioCtx.createGain();
+    noiseGain.gain.setValueAtTime(0, startTime);
+    noiseGain.gain.linearRampToValueAtTime(instrumentGain * 0.14, startTime + 0.005);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.06);
 
-  noiseNode.connect(noiseFilter);
-  noiseFilter.connect(noiseGain);
-  noiseGain.connect(gainL);
-  noiseGain.connect(gainR);
+    noiseNode.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(gainL);
+    noiseGain.connect(gainR);
 
-  noiseNode.start(startTime);
-  oscillators.push(noiseNode);
+    noiseNode.start(startTime);
+    oscillators.push(noiseNode);
+  } catch (err) {
+    console.error("Failed to synthesize bow scrape noise transient:", err);
+  }
 
   // 3. Triangle Core Voice (warm acoustic body core)
   const oscTri = audioCtx.createOscillator();
