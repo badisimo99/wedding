@@ -11,15 +11,10 @@ const DEFAULT_CONFIG = {
 let config = { ...DEFAULT_CONFIG };
 let rsvps = [];
 
-// Web Audio API Context and Synthesizer Nodes
-let audioCtx = null;
-let masterGain = null;
-let delayNode = null;
+// Audio Player State (YouTube IFrame Integration)
 let isAudioPlaying = false;
-let padOscs = [];
-let padLfos = [];
-let chimeTimer = null; // Reused as the melody sequence timeout
-let currentNoteIndex = 0;
+let ytPlayer = null;
+let isYtReady = false;
 
 // Canvas Particles
 let canvas = null;
@@ -375,264 +370,53 @@ function exportRSVPsCSV() {
   document.body.removeChild(link);
 }
 
-// --- Procedural Wedding Ambient Synth Audio Engine ---
+// Load YouTube IFrame API
+const tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+const firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+// Define global YouTube callback
+window.onYouTubeIframeAPIReady = function() {
+  ytPlayer = new YT.Player('youtube-player', {
+    height: '1',
+    width: '1',
+    videoId: 'F3S13y27d14',
+    playerVars: {
+      'playsinline': 1,
+      'controls': 0,
+      'disablekb': 1,
+      'fs': 0,
+      'modestbranding': 1,
+      'rel': 0,
+      'showinfo': 0,
+      'loop': 1,
+      'playlist': 'F3S13y27d14'
+    },
+    events: {
+      'onReady': () => {
+        isYtReady = true;
+      }
+    }
+  });
+};
+
 function toggleAudio() {
   const audioBtn = document.getElementById("audio-btn");
-  
-  if (!audioCtx) {
-    // Initial instantiation
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AudioContextClass();
-    setupAudioNodes();
-  }
-
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+  if (!isYtReady || !ytPlayer) {
+    alert("Audio player is loading. Please try again in a moment!");
+    return;
   }
 
   if (isAudioPlaying) {
-    // Mute/Pause
-    masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
-    masterGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2); // fade out over 1.2s
+    ytPlayer.pauseVideo();
     isAudioPlaying = false;
     audioBtn.classList.remove("active");
-    clearTimeout(chimeTimer);
   } else {
-    // Unmute/Play
-    masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
-    masterGain.gain.exponentialRampToValueAtTime(0.3, audioCtx.currentTime + 1.5); // fade in to 30% volume
+    ytPlayer.playVideo();
     isAudioPlaying = true;
     audioBtn.classList.add("active");
-    
-    // Start procedural pad & melody loop
-    startAmbientPad();
-    triggerProceduralChimes();
   }
-}
-
-function setupAudioNodes() {
-  // Master gain
-  masterGain = audioCtx.createGain();
-  masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
-
-  // Delay node for space/reverb simulation
-  delayNode = audioCtx.createDelay();
-  delayNode.delayTime.setValueAtTime(0.45, audioCtx.currentTime);
-
-  const delayFeedback = audioCtx.createGain();
-  delayFeedback.gain.setValueAtTime(0.35, audioCtx.currentTime);
-
-  // Connect Delay loop
-  delayNode.connect(delayFeedback);
-  delayFeedback.connect(delayNode);
-
-  // Main routings
-  masterGain.connect(audioCtx.destination);
-  delayNode.connect(masterGain);
-}
-
-// --- "Going to the Chapel of Love" Melody Sequence & Frequencies ---
-const NOTE_FREQS = {
-  "A4": 440.00,
-  "C5": 523.25,
-  "D5": 587.33,
-  "E5": 659.25,
-  "G5": 783.99,
-  "A5": 880.00,
-  "C6": 1046.50,
-  "D6": 1174.66,
-  "E6": 1318.51,
-  "G6": 1567.98,
-  "rest": 0
-};
-
-const melodySeq = [
-  // Phrase 1: "Goin' to the chapel..." (C Major)
-  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // Go-
-  { note: "C5", dur: 0.5 }, // in'
-  { note: "C5", dur: 0.5 }, // to the
-  { note: "D5", dur: 1.0 }, // cha-
-  { note: "C5", dur: 1.0 }, // pel
-  { note: "rest", dur: 1.0 },
-  // "...and we're gonna get married" (F Major)
-  { note: "A4", dur: 0.5, chord: [174.61, 220.00, 261.63, 349.23] }, // and
-  { note: "C5", dur: 0.5 }, // we're
-  { note: "D5", dur: 0.5 }, // gon-
-  { note: "C5", dur: 0.5 }, // na
-  { note: "A4", dur: 0.5 }, // get
-  { note: "C5", dur: 1.0 }, // mar-
-  { note: "C5", dur: 2.0 }, // ried
-  { note: "rest", dur: 1.5 },
-
-  // Phrase 2: "Goin' to the chapel..." (C Major)
-  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // Go-
-  { note: "C5", dur: 0.5 }, // in'
-  { note: "C5", dur: 0.5 }, // to the
-  { note: "D5", dur: 1.0 }, // cha-
-  { note: "C5", dur: 1.0 }, // pel
-  { note: "rest", dur: 1.0 },
-  // "...and we're gonna get married" (F Major)
-  { note: "A4", dur: 0.5, chord: [174.61, 220.00, 261.63, 349.23] }, // and
-  { note: "C5", dur: 0.5 }, // we're
-  { note: "D5", dur: 0.5 }, // gon-
-  { note: "C5", dur: 0.5 }, // na
-  { note: "A4", dur: 0.5 }, // get
-  { note: "C5", dur: 1.0 }, // mar-
-  { note: "C5", dur: 2.0 }, // ried
-  { note: "rest", dur: 1.5 },
-
-  // Phrase 3: "Gee, I really love you..." (C Major)
-  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // Gee,
-  { note: "C5", dur: 0.5 }, // I
-  { note: "C5", dur: 0.5 }, // real-ly
-  { note: "D5", dur: 1.0 }, // love
-  { note: "C5", dur: 1.0 }, // you
-  { note: "rest", dur: 1.0 },
-  // "...and we're gonna get married" (F Major)
-  { note: "A4", dur: 0.5, chord: [174.61, 220.00, 261.63, 349.23] }, // and
-  { note: "C5", dur: 0.5 }, // we're
-  { note: "D5", dur: 0.5 }, // gon-
-  { note: "C5", dur: 0.5 }, // na
-  { note: "A4", dur: 0.5 }, // get
-  { note: "C5", dur: 1.0 }, // mar-
-  { note: "C5", dur: 2.0 }, // ried
-  { note: "rest", dur: 1.5 },
-
-  // Phrase 4: "Goin' to the chapel of love" (C Major -> G Major)
-  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // Go-
-  { note: "C5", dur: 0.5 }, // in'
-  { note: "D5", dur: 0.5 }, // to the
-  { note: "E5", dur: 1.0 }, // cha-
-  { note: "E5", dur: 1.0 }, // pel
-  { note: "D5", dur: 1.0, chord: [196.00, 246.94, 293.66, 392.00] }, // of
-  { note: "C5", dur: 3.0 }, // love
-  { note: "rest", dur: 4.0, chord: [130.81, 196.00, 261.63, 329.63] } // rest back to C Major
-];
-
-function startAmbientPad() {
-  // Clear any old oscillators and LFOs
-  padOscs.forEach(osc => { try { osc.stop(); } catch(e) {} });
-  padLfos.forEach(lfo => { try { lfo.stop(); } catch(e) {} });
-  padOscs = [];
-  padLfos = [];
-
-  // Start with C Major chord to match the melody key
-  const baseFreqs = [130.81, 196.00, 261.63, 329.63];
-
-  baseFreqs.forEach(freq => {
-    const osc = audioCtx.createOscillator();
-    const oscGain = audioCtx.createGain();
-    const lpf = audioCtx.createBiquadFilter();
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    osc.detune.setValueAtTime((Math.random() - 0.5) * 8, audioCtx.currentTime);
-
-    lpf.type = 'lowpass';
-    lpf.Q.setValueAtTime(2, audioCtx.currentTime);
-    lpf.frequency.setValueAtTime(600, audioCtx.currentTime);
-
-    const lfo = audioCtx.createOscillator();
-    const lfoGain = audioCtx.createGain();
-    lfo.frequency.value = 0.05 + Math.random() * 0.04;
-    lfoGain.gain.value = 250;
-
-    lfo.connect(lfoGain);
-    lfoGain.connect(lpf.frequency);
-    lfo.start();
-
-    oscGain.gain.setValueAtTime(0.01, audioCtx.currentTime);
-    
-    osc.connect(lpf);
-    lpf.connect(oscGain);
-    oscGain.connect(masterGain);
-    
-    osc.start();
-
-    const swellTime = 8 + Math.random() * 6;
-    function swell() {
-      if (!isAudioPlaying) return;
-      const t = audioCtx.currentTime;
-      oscGain.gain.linearRampToValueAtTime(0.04 + Math.random() * 0.06, t + swellTime / 2);
-      oscGain.gain.linearRampToValueAtTime(0.01, t + swellTime);
-      setTimeout(swell, swellTime * 1000);
-    }
-    swell();
-
-    padOscs.push(osc);
-    padLfos.push(lfo);
-  });
-}
-
-function changePadChord(freqs) {
-  if (!audioCtx || padOscs.length < freqs.length) return;
-  const t = audioCtx.currentTime;
-  padOscs.forEach((osc, index) => {
-    osc.frequency.cancelScheduledValues(t);
-    // Smoothly glide the pitches over 1.5 seconds for a premium synth chord change
-    osc.frequency.exponentialRampToValueAtTime(freqs[index], t + 1.5);
-  });
-}
-
-function triggerProceduralChimes() {
-  if (chimeTimer) clearTimeout(chimeTimer);
-  currentNoteIndex = 0;
-
-  function playNext() {
-    if (!isAudioPlaying) return;
-
-    const tempo = 0.38; // 0.38 seconds per beat (perfect walking tempo)
-    const item = melodySeq[currentNoteIndex];
-    
-    // Change background chord dynamically if defined
-    if (item.chord) {
-      changePadChord(item.chord);
-    }
-
-    // Play note if not a rest
-    if (item.note !== "rest") {
-      const freq = NOTE_FREQS[item.note];
-      triggerBellNote(freq, audioCtx.currentTime);
-    }
-
-    currentNoteIndex = (currentNoteIndex + 1) % melodySeq.length;
-    
-    const delay = item.dur * tempo * 1000;
-    chimeTimer = setTimeout(playNext, delay);
-  }
-  
-  playNext();
-}
-
-function triggerBellNote(frequency, startTime) {
-  const osc = audioCtx.createOscillator();
-  const gainNode = audioCtx.createGain();
-  const filter = audioCtx.createBiquadFilter();
-
-  osc.type = 'sine'; // pure round bell sound
-  osc.frequency.setValueAtTime(frequency, startTime);
-
-  // Highpass filter to strip low muddiness from chimes
-  filter.type = 'highpass';
-  filter.frequency.setValueAtTime(300, startTime);
-
-  // Gain envelope: instant hit, long ring-out
-  gainNode.gain.setValueAtTime(0, startTime);
-  gainNode.gain.linearRampToValueAtTime(0.08, startTime + 0.01); // sharp attack
-  gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 2.5); // long tail decay
-
-  // Connect to delay line and master output
-  osc.connect(filter);
-  filter.connect(gainNode);
-  gainNode.connect(masterGain);
-  
-  // Also send chimes directly into our echo unit for a dreamy, ambient tail
-  if (delayNode) {
-    gainNode.connect(delayNode);
-  }
-
-  osc.start(startTime);
-  osc.stop(startTime + 3.0);
 }
 
 // --- Canvas Dynamic Particles ---
