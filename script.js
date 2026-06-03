@@ -24,6 +24,7 @@ let feedbackGainR = null;
 let convolverNode = null;
 let reverbGain = null;
 let preDelayNode = null;
+let schedulerInterval = null;
 
 
 
@@ -629,46 +630,38 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
 
   // Detune spread and relative gains for 5 chorus-detuned voices
   const detunes = [1.0, 0.996, 1.004, 1.998, 2.002];
-  const relativeGains = [0.15, 0.12, 0.12, 0.08, 0.08];
+  const relativeGains = [0.24, 0.18, 0.18, 0.10, 0.10];
 
-  // Set instrument-specific parameters to mimic their acoustic signatures
-  let attackTime = 0.20;
-  let releaseTime = 0.8;
-  let filterStartFreq = 1200;
-  let filterEndFreq = 700;
-  let vibratoDepth = 0.005; // 0.5% frequency depth (approx 8.6 cents)
-  let vibratoSpeed = 5.8;   // 5.8 Hz LFO
-  let vibratoDelay = 0.35;  // delay before vibrato reaches peak
-  let instrumentGain = 0.14;
+  // Set instrument-specific parameters
+  let attackTime = 0.22;
+  let releaseTime = 0.85;
+  let vibratoDepth = 0.004; // subtle pitch depth
+  let vibratoSpeed = 5.6;
+  let vibratoDelay = 0.35;
+  let instrumentGain = 0.16;
 
   if (instrument === "cello") {
     attackTime = 0.38;
-    releaseTime = 1.25;
-    filterStartFreq = 700;
-    filterEndFreq = 350;
-    vibratoDepth = 0.004;   // slightly narrower vibrato
-    vibratoSpeed = 5.0;     // slower vibrato for larger instrument
+    releaseTime = 1.30;
+    vibratoDepth = 0.0035;
+    vibratoSpeed = 4.8;
     vibratoDelay = 0.5;
-    instrumentGain = 0.18;  // slightly louder to project the bass
+    instrumentGain = 0.20;
   } else if (instrument === "viola") {
     attackTime = 0.28;
-    releaseTime = 0.95;
-    filterStartFreq = 950;
-    filterEndFreq = 500;
-    vibratoDepth = 0.005;
-    vibratoSpeed = 5.4;
+    releaseTime = 1.00;
+    vibratoDepth = 0.004;
+    vibratoSpeed = 5.2;
     vibratoDelay = 0.4;
-    instrumentGain = 0.13;
+    instrumentGain = 0.15;
   } else {
     // violin
     attackTime = 0.18;
     releaseTime = 0.75;
-    filterStartFreq = 1400;
-    filterEndFreq = 750;
-    vibratoDepth = 0.006;
-    vibratoSpeed = 6.0;
+    vibratoDepth = 0.0045;
+    vibratoSpeed = 5.8;
     vibratoDelay = 0.25;
-    instrumentGain = 0.12;
+    instrumentGain = 0.13;
   }
 
   // 1. Natural Vibrato LFO with delayed onset (humanized expression)
@@ -680,97 +673,28 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
   lfoGain.gain.setValueAtTime(0, startTime);
   lfoGain.gain.setValueAtTime(0, startTime + vibratoDelay * 0.4);
   lfoGain.gain.linearRampToValueAtTime(freq * vibratoDepth, startTime + vibratoDelay);
+  lfoGain.gain.setValueAtTime(freq * vibratoDepth, startTime + duration);
+  lfoGain.gain.linearRampToValueAtTime(0, startTime + duration + releaseTime);
   lfo.connect(lfoGain);
 
-  // 2. High-cut & Notch filters to remove digital scratchiness and emulate body resonances
-  const filterL = audioCtx.createBiquadFilter();
-  filterL.type = "lowpass";
-  filterL.frequency.setValueAtTime(filterStartFreq, startTime);
-  filterL.frequency.exponentialRampToValueAtTime(filterEndFreq, startTime + duration);
-  filterL.Q.setValueAtTime(1.0, startTime);
-
-  const filterR = audioCtx.createBiquadFilter();
-  filterR.type = "lowpass";
-  filterR.frequency.setValueAtTime(filterStartFreq, startTime);
-  filterR.frequency.exponentialRampToValueAtTime(filterEndFreq, startTime + duration);
-  filterR.Q.setValueAtTime(1.0, startTime);
-
-  const notchL = audioCtx.createBiquadFilter();
-  notchL.type = "notch";
-  notchL.frequency.setValueAtTime(3200, startTime);
-  notchL.Q.setValueAtTime(2.0, startTime);
-
-  const notchR = audioCtx.createBiquadFilter();
-  notchR.type = "notch";
-  notchR.frequency.setValueAtTime(3200, startTime);
-  notchR.Q.setValueAtTime(2.0, startTime);
-
-  // 3. Custom EQ filters to sweeten tones and carve pocket spaces for each instrument
-  const eqL = audioCtx.createBiquadFilter();
-  const eqR = audioCtx.createBiquadFilter();
-
-  if (instrument === "violin") {
-    eqL.type = "highshelf";
-    eqL.frequency.setValueAtTime(6000, startTime);
-    eqL.gain.setValueAtTime(3.0, startTime);
-
-    eqR.type = "highshelf";
-    eqR.frequency.setValueAtTime(6000, startTime);
-    eqR.gain.setValueAtTime(3.0, startTime);
-  } else if (instrument === "cello") {
-    eqL.type = "peaking";
-    eqL.frequency.setValueAtTime(90, startTime);
-    eqL.Q.setValueAtTime(1.2, startTime);
-    eqL.gain.setValueAtTime(4.0, startTime);
-
-    eqR.type = "peaking";
-    eqR.frequency.setValueAtTime(90, startTime);
-    eqR.Q.setValueAtTime(1.2, startTime);
-    eqR.gain.setValueAtTime(4.0, startTime);
-  } else {
-    // viola
-    eqL.type = "peaking";
-    eqL.frequency.setValueAtTime(250, startTime);
-    eqL.Q.setValueAtTime(1.0, startTime);
-    eqL.gain.setValueAtTime(2.0, startTime);
-
-    eqR.type = "peaking";
-    eqR.frequency.setValueAtTime(250, startTime);
-    eqR.Q.setValueAtTime(1.0, startTime);
-    eqR.gain.setValueAtTime(2.0, startTime);
-  }
-
-  // 4. Slow Bowing modulation LFO to simulate human breathing/pressure intensity changes
-  const bowingLFO = audioCtx.createOscillator();
-  bowingLFO.type = "sine";
-  bowingLFO.frequency.setValueAtTime(0.35 + Math.random() * 0.15, startTime);
-
-  const bowingGain = audioCtx.createGain();
-  bowingGain.gain.setValueAtTime(filterStartFreq * 0.18, startTime); // modulate up to 18% of cutoff
-
-  bowingLFO.connect(bowingGain);
-  bowingGain.connect(filterL.frequency);
-  bowingGain.connect(filterR.frequency);
-
-  // Master Gain for Left/Right channels (Breathing/Organic Attack & Release Envelopes)
+  // Master Gain for Left/Right channels (Smooth Linear Attack & Release Envelopes)
   const gainL = audioCtx.createGain();
   const gainR = audioCtx.createGain();
 
   gainL.gain.setValueAtTime(0, startTime);
   gainL.gain.linearRampToValueAtTime(instrumentGain, startTime + attackTime);
   gainL.gain.setValueAtTime(instrumentGain, startTime + duration);
-  gainL.gain.exponentialRampToValueAtTime(0.0001, startTime + duration + releaseTime);
+  gainL.gain.linearRampToValueAtTime(0, startTime + duration + releaseTime);
 
   gainR.gain.setValueAtTime(0, startTime);
   gainR.gain.linearRampToValueAtTime(instrumentGain, startTime + attackTime);
   gainR.gain.setValueAtTime(instrumentGain, startTime + duration);
-  gainR.gain.exponentialRampToValueAtTime(0.0001, startTime + duration + releaseTime);
+  gainR.gain.linearRampToValueAtTime(0, startTime + duration + releaseTime);
 
   // Stereo panning to position instruments in the virtual orchestra space
   const panL = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
   const panR = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
   
-  // Violins panned left (-0.35), Violas near center/right (+0.1), Cellos panned right (+0.4)
   let panPosL = -0.3;
   let panPosR = 0.3;
   if (instrument === "cello") {
@@ -787,15 +711,7 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
   if (panL) panL.pan.setValueAtTime(panPosL, startTime);
   if (panR) panR.pan.setValueAtTime(panPosR, startTime);
 
-  // Connect routing chains
-  filterL.connect(notchL);
-  notchL.connect(eqL);
-  eqL.connect(gainL);
-
-  filterR.connect(notchR);
-  notchR.connect(eqR);
-  eqR.connect(gainR);
-
+  // Connect routing chains directly from gain to master and reverb inputs
   if (panL) {
     gainL.connect(panL);
     panL.connect(masterGain);
@@ -820,28 +736,10 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
 
   const stopTime = startTime + duration + releaseTime + 0.1;
 
-  // 5. Triangle Core Voice (anchors the fundamental frequency with warm woody resonance)
-  const oscTri = audioCtx.createOscillator();
-  oscTri.type = "triangle";
-  oscTri.frequency.setValueAtTime(freq, startTime);
-  lfoGain.connect(oscTri.frequency);
-
-  const voiceGainTri = audioCtx.createGain();
-  voiceGainTri.gain.setValueAtTime(1.1, startTime); // strong fundamental core
-  oscTri.connect(voiceGainTri);
-
-  voiceGainTri.connect(filterL);
-  voiceGainTri.connect(filterR);
-
-  oscTri.start(startTime);
-  oscTri.stop(stopTime);
-  oscTri.stopTime = stopTime;
-  oscillators.push(oscTri);
-
-  // 6. Detuned Sawtooth Voices (provides organic string ensemble friction/sheen)
+  // Create and connect the 5 detuned Triangle string voice oscillators
   detunes.forEach((detune, idx) => {
     const osc = audioCtx.createOscillator();
-    osc.type = "sawtooth";
+    osc.type = "triangle";
     osc.frequency.setValueAtTime(freq * detune, startTime);
     lfoGain.connect(osc.frequency);
 
@@ -850,9 +748,9 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
     osc.connect(voiceGain);
 
     if (idx % 2 === 0) {
-      voiceGain.connect(filterL);
+      voiceGain.connect(gainL);
     } else {
-      voiceGain.connect(filterR);
+      voiceGain.connect(gainR);
     }
 
     osc.start(startTime);
@@ -866,59 +764,88 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
   lfo.stopTime = stopTime;
   oscillators.push(lfo);
 
-  bowingLFO.start(startTime);
-  bowingLFO.stop(stopTime);
-  bowingLFO.stopTime = stopTime;
-  oscillators.push(bowingLFO);
-
   return oscillators;
 }
 
-function scheduleMelodyLoop(startTime) {
-  const tempo = 84; // Wagner tempo
+function startScheduler() {
+  const tempo = 84;
   const beatDuration = 60 / tempo;
+  const loopLengthTime = LOOP_DURATION_BEATS * beatDuration;
+  const scheduleAheadTime = 0.250; // schedule 250ms in advance
+  const schedulerIntervalMs = 50;  // check every 50ms
 
-  // Clean up completed nodes from the array to prevent memory growth
-  const now = audioCtx ? audioCtx.currentTime : 0;
-  scheduledNodes = scheduledNodes.filter(node => {
-    return node.stopTime && node.stopTime > now;
-  });
+  // Initialize loop timeline pointer
+  let currentLoopStartAudioTime = audioCtx.currentTime + 0.05;
 
-  // Helper to schedule an instrument part
-  const scheduleLine = (line, instrument) => {
-    line.forEach(step => {
-      // Subtly humanize timing (micro-offsets of ±6ms)
-      const timeOffset = (Math.random() - 0.5) * 0.012;
-      const noteTime = startTime + step.beat * beatDuration + timeOffset;
+  function scheduleEvents() {
+    const now = audioCtx.currentTime;
+    const lookaheadTime = now + scheduleAheadTime;
 
-      // Subtly humanize pitch (micro-tuning differences of ±1.5 cents)
-      const pitchOffset = 1 + (Math.random() - 0.5) * 0.0015;
-      const freq = NOTE_FREQS[step.note] * pitchOffset;
+    // Helper to find and schedule notes for a line
+    const scheduleLineNotes = (line, instrument) => {
+      line.forEach(step => {
+        // Absolute beat time for this note relative to loop starts
+        const noteTime = currentLoopStartAudioTime + step.beat * beatDuration;
 
-      if (freq) {
-        const duration = step.duration * beatDuration;
-        const nodes = triggerStringNoteScheduled(freq, noteTime, duration, instrument);
-        if (nodes) {
-          scheduledNodes.push(...nodes);
+        // Schedule only if the note time is within our lookahead window
+        if (noteTime >= now && noteTime < lookaheadTime) {
+          // Check if this note was already scheduled for this specific loop iteration
+          if (!step.scheduledTimes) step.scheduledTimes = [];
+          if (step.scheduledTimes.some(t => Math.abs(t - noteTime) < 0.01)) {
+            return; // already scheduled
+          }
+
+          step.scheduledTimes.push(noteTime);
+
+          // Humanize timing (±6ms) and pitch (±1.5 cents)
+          const timeOffset = (Math.random() - 0.5) * 0.012;
+          const pitchOffset = 1 + (Math.random() - 0.5) * 0.0015;
+          const finalNoteTime = noteTime + timeOffset;
+          const freq = NOTE_FREQS[step.note] * pitchOffset;
+          const duration = step.duration * beatDuration;
+
+          if (freq) {
+            const nodes = triggerStringNoteScheduled(freq, finalNoteTime, duration, instrument);
+            if (nodes) {
+              scheduledNodes.push(...nodes);
+            }
+          }
         }
-      }
+      });
+    };
+
+    // Schedule each instrument part
+    scheduleLineNotes(MELODY, "violin");
+    scheduleLineNotes(VIOLA_LINE, "viola");
+    scheduleLineNotes(CELLO_LINE, "cello");
+
+    // Clean up old note times to keep memory footprint flat
+    const cleanupThreshold = now - 10;
+    const cleanTimes = line => {
+      line.forEach(step => {
+        if (step.scheduledTimes) {
+          step.scheduledTimes = step.scheduledTimes.filter(t => t > cleanupThreshold);
+        }
+      });
+    };
+    cleanTimes(MELODY);
+    cleanTimes(VIOLA_LINE);
+    cleanTimes(CELLO_LINE);
+
+    // Filter scheduledNodes array to prevent memory leaks
+    scheduledNodes = scheduledNodes.filter(node => {
+      return node.stopTime && node.stopTime > now;
     });
-  };
 
-  // Schedule all 3 string parts (Violin, Viola, Cello)
-  scheduleLine(MELODY, "violin");
-  scheduleLine(VIOLA_LINE, "viola");
-  scheduleLine(CELLO_LINE, "cello");
-
-  // Schedule the next loop
-  const nextLoopTime = startTime + LOOP_DURATION_BEATS * beatDuration;
-  const msToNext = (nextLoopTime - audioCtx.currentTime) * 1000;
-  
-  loopTimer = setTimeout(() => {
-    if (isAudioPlaying) {
-      scheduleMelodyLoop(nextLoopTime);
+    // Advance the loop start time pointer once we cross into the second half of the current loop
+    if (now + 2.0 > currentLoopStartAudioTime + loopLengthTime) {
+      currentLoopStartAudioTime += loopLengthTime;
     }
-  }, msToNext - 200); // 200ms look-ahead buffer
+  }
+
+  // Run first execution immediately, then poll
+  scheduleEvents();
+  schedulerInterval = setInterval(scheduleEvents, schedulerIntervalMs);
 }
 
 function toggleAudio() {
@@ -927,10 +854,13 @@ function toggleAudio() {
   if (isAudioPlaying) {
     isAudioPlaying = false;
     audioBtn.classList.remove("active");
-    if (loopTimer) {
-      clearTimeout(loopTimer);
-      loopTimer = null;
+    
+    // Clear lookahead scheduler interval
+    if (schedulerInterval) {
+      clearInterval(schedulerInterval);
+      schedulerInterval = null;
     }
+    
     // Stop all active scheduled nodes
     scheduledNodes.forEach(node => {
       try {
@@ -953,7 +883,9 @@ function toggleAudio() {
     }
     
     scheduledNodes = [];
-    scheduleMelodyLoop(audioCtx.currentTime + 0.05);
+    
+    // Start lookahead scheduler
+    startScheduler();
   }
 }
 
