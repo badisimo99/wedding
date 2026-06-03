@@ -391,33 +391,17 @@ function exportRSVPsCSV() {
 
 // String Ensemble Melody System (Web Audio API)
 const NOTE_FREQS = {
-  "A3": 220.00,
-  "Bb3": 233.08,
-  "A#3": 233.08,
-  "B3": 246.94,
-  "C4": 261.63,
-  "C#4": 277.18,
-  "D4": 293.66,
-  "D#4": 311.13,
-  "Eb4": 311.13,
-  "E4": 329.63,
-  "F4": 349.23,
-  "F#4": 369.99,
-  "G4": 392.00,
-  "G#4": 415.30,
-  "A4": 440.00,
-  "Bb4": 466.16,
-  "A#4": 466.16,
-  "B4": 493.88,
-  "C5": 523.25,
-  "C#5": 554.37,
-  "D5": 587.33,
-  "D#5": 622.25,
-  "Eb5": 622.25,
-  "E5": 659.25,
-  "F5": 698.46
+  // Octave 2 (Cello lower range)
+  "C2": 65.41, "C#2": 69.30, "Db2": 69.30, "D2": 73.42, "D#2": 77.78, "Eb2": 77.78, "E2": 82.41, "F2": 87.31, "F#2": 92.50, "Gb2": 92.50, "G2": 98.00, "G#2": 103.83, "Ab2": 103.83, "A2": 110.00, "A#2": 116.54, "Bb2": 116.54, "B2": 123.47,
+  // Octave 3 (Viola and Cello middle range)
+  "C3": 130.81, "C#3": 138.59, "Db3": 138.59, "D3": 146.83, "D#3": 155.56, "Eb3": 155.56, "E3": 164.81, "F3": 174.61, "F#3": 185.00, "Gb3": 185.00, "G3": 196.00, "G#3": 207.65, "Ab3": 207.65, "A3": 220.00, "A#3": 233.08, "Bb3": 233.08, "B3": 246.94,
+  // Octave 4 (Violin and Viola range)
+  "C4": 261.63, "C#4": 277.18, "D4": 293.66, "D#4": 311.13, "Eb4": 311.13, "E4": 329.63, "F4": 349.23, "F#4": 369.99, "G4": 392.00, "G#4": 415.30, "A4": 440.00, "A#4": 466.16, "Bb4": 466.16, "B4": 493.88,
+  // Octave 5 (Violin higher range)
+  "C5": 523.25, "C#5": 554.37, "D5": 587.33, "D#5": 622.25, "Eb5": 622.25, "E5": 659.25, "F5": 698.46
 };
 
+// Violin melody line
 const MELODY = [
   // Measure 1
   { note: "F4",  beat: 0.0, duration: 0.9 },
@@ -474,6 +458,62 @@ const MELODY = [
   { note: "D5",  beat: 29.75, duration: 0.2 },
   // Measure 16
   { note: "Bb4", beat: 30.0, duration: 1.4 }
+];
+
+// Viola harmony backing line
+const VIOLA_LINE = [
+  // Measure 1 & 2
+  { note: "D3",  beat: 0.0, duration: 3.8 },
+  // Measure 3 & 4
+  { note: "C3",  beat: 4.0, duration: 1.8 },
+  { note: "C3",  beat: 5.75, duration: 0.2 },
+  { note: "D3",  beat: 6.0, duration: 1.8 },
+  // Measure 5 & 6
+  { note: "D3",  beat: 8.0, duration: 1.8 },
+  { note: "G3",  beat: 10.0, duration: 1.8 },
+  // Measure 7 & 8
+  { note: "A3",  beat: 12.0, duration: 1.8 },
+  { note: "A3",  beat: 14.0, duration: 1.8 },
+  // Measure 9 & 10
+  { note: "D3",  beat: 16.0, duration: 3.8 },
+  // Measure 11 & 12
+  { note: "C3",  beat: 20.0, duration: 1.8 },
+  { note: "C3",  beat: 21.75, duration: 0.2 },
+  { note: "D3",  beat: 22.0, duration: 1.8 },
+  // Measure 13 & 14
+  { note: "D3",  beat: 24.0, duration: 1.8 },
+  { note: "F3",  beat: 26.0, duration: 1.8 },
+  // Measure 15 & 16
+  { note: "G3",  beat: 28.0, duration: 1.8 },
+  { note: "D3",  beat: 30.0, duration: 1.8 }
+];
+
+// Cello bass backing line
+const CELLO_LINE = [
+  // Measure 1 & 2
+  { note: "Bb2", beat: 0.0, duration: 3.8 },
+  // Measure 3 & 4
+  { note: "F2",  beat: 4.0, duration: 1.8 },
+  { note: "F2",  beat: 5.75, duration: 0.2 },
+  { note: "Bb2", beat: 6.0, duration: 1.8 },
+  // Measure 5 & 6
+  { note: "Bb2", beat: 8.0, duration: 1.8 },
+  { note: "Eb2", beat: 10.0, duration: 1.8 },
+  // Measure 7 & 8
+  { note: "F2",  beat: 12.0, duration: 1.8 },
+  { note: "F2",  beat: 14.0, duration: 1.8 },
+  // Measure 9 & 10
+  { note: "Bb2", beat: 16.0, duration: 3.8 },
+  // Measure 11 & 12
+  { note: "F2",  beat: 20.0, duration: 1.8 },
+  { note: "F2",  beat: 21.75, duration: 0.2 },
+  { note: "Bb2", beat: 22.0, duration: 1.8 },
+  // Measure 13 & 14
+  { note: "Bb2", beat: 24.0, duration: 1.8 },
+  { note: "Bb2", beat: 26.0, duration: 1.8 },
+  // Measure 15 & 16
+  { note: "Eb2", beat: 28.0, duration: 1.8 },
+  { note: "Bb2", beat: 30.0, duration: 1.8 }
 ];
 
 const LOOP_DURATION_BEATS = 32;
@@ -536,60 +576,130 @@ function initAudioContext() {
   }
 }
 
-function triggerStringNoteScheduled(freq, startTime, duration) {
+function triggerStringNoteScheduled(freq, startTime, duration, instrument = "violin") {
   if (!audioCtx) return null;
 
   const oscillators = [];
 
-  // Define detuning factors for 5 string voices to create a thick chorus section
+  // Detune spread and relative gains for 5 chorus-detuned voices
   const detunes = [1.0, 0.996, 1.004, 1.998, 2.002];
   const relativeGains = [0.15, 0.12, 0.12, 0.08, 0.08];
 
-  // LFO for natural vibrato (pitch oscillation) at 5.8Hz
+  // Set instrument-specific parameters to mimic their acoustic signatures
+  let attackTime = 0.20;
+  let releaseTime = 0.8;
+  let filterStartFreq = 1200;
+  let filterEndFreq = 700;
+  let vibratoDepth = 0.005; // 0.5% frequency depth (approx 8.6 cents)
+  let vibratoSpeed = 5.8;   // 5.8 Hz LFO
+  let vibratoDelay = 0.35;  // delay before vibrato reaches peak
+  let instrumentGain = 0.14;
+
+  if (instrument === "cello") {
+    attackTime = 0.38;
+    releaseTime = 1.25;
+    filterStartFreq = 700;
+    filterEndFreq = 350;
+    vibratoDepth = 0.004;   // slightly narrower vibrato
+    vibratoSpeed = 5.0;     // slower vibrato for larger instrument
+    vibratoDelay = 0.5;
+    instrumentGain = 0.18;  // slightly louder to project the bass
+  } else if (instrument === "viola") {
+    attackTime = 0.28;
+    releaseTime = 0.95;
+    filterStartFreq = 950;
+    filterEndFreq = 500;
+    vibratoDepth = 0.005;
+    vibratoSpeed = 5.4;
+    vibratoDelay = 0.4;
+    instrumentGain = 0.13;
+  } else {
+    // violin
+    attackTime = 0.18;
+    releaseTime = 0.75;
+    filterStartFreq = 1400;
+    filterEndFreq = 750;
+    vibratoDepth = 0.006;
+    vibratoSpeed = 6.0;
+    vibratoDelay = 0.25;
+    instrumentGain = 0.12;
+  }
+
+  // 1. Natural Vibrato LFO with delayed onset (humanized expression)
   const lfo = audioCtx.createOscillator();
   lfo.type = "sine";
-  lfo.frequency.setValueAtTime(5.8, startTime);
+  lfo.frequency.setValueAtTime(vibratoSpeed, startTime);
 
   const lfoGain = audioCtx.createGain();
-  lfoGain.gain.setValueAtTime(freq * 0.005, startTime); // subtle pitch depth
-
+  lfoGain.gain.setValueAtTime(0, startTime);
+  lfoGain.gain.setValueAtTime(0, startTime + vibratoDelay * 0.4);
+  lfoGain.gain.linearRampToValueAtTime(freq * vibratoDepth, startTime + vibratoDelay);
   lfo.connect(lfoGain);
 
-  // Warm Lowpass Filters to smooth out the sawtooth buzz
+  // 2. High-cut & Notch filters to remove digital scratchiness and emulate body resonances
   const filterL = audioCtx.createBiquadFilter();
   filterL.type = "lowpass";
-  filterL.frequency.setValueAtTime(1200, startTime);
-  filterL.frequency.exponentialRampToValueAtTime(700, startTime + duration); // sweeps warmer
+  filterL.frequency.setValueAtTime(filterStartFreq, startTime);
+  filterL.frequency.exponentialRampToValueAtTime(filterEndFreq, startTime + duration);
   filterL.Q.setValueAtTime(1.0, startTime);
 
   const filterR = audioCtx.createBiquadFilter();
   filterR.type = "lowpass";
-  filterR.frequency.setValueAtTime(1200, startTime);
-  filterR.frequency.exponentialRampToValueAtTime(700, startTime + duration);
+  filterR.frequency.setValueAtTime(filterStartFreq, startTime);
+  filterR.frequency.exponentialRampToValueAtTime(filterEndFreq, startTime + duration);
   filterR.Q.setValueAtTime(1.0, startTime);
 
-  // Master Gain for Left and Right channels
+  const notchL = audioCtx.createBiquadFilter();
+  notchL.type = "notch";
+  notchL.frequency.setValueAtTime(3200, startTime);
+  notchL.Q.setValueAtTime(2.0, startTime);
+
+  const notchR = audioCtx.createBiquadFilter();
+  notchR.type = "notch";
+  notchR.frequency.setValueAtTime(3200, startTime);
+  notchR.Q.setValueAtTime(2.0, startTime);
+
+  // Master Gain for Left/Right channels (Breathing/Organic Attack & Release Envelopes)
   const gainL = audioCtx.createGain();
   const gainR = audioCtx.createGain();
 
-  // String attack envelope: 250ms breathing swell fade-in, and 800ms release decay fade-out
   gainL.gain.setValueAtTime(0, startTime);
-  gainL.gain.linearRampToValueAtTime(0.14, startTime + 0.25); // slow attack swell
-  gainL.gain.exponentialRampToValueAtTime(0.0001, startTime + duration + 0.8); // release
+  gainL.gain.linearRampToValueAtTime(instrumentGain, startTime + attackTime);
+  gainL.gain.setValueAtTime(instrumentGain, startTime + duration);
+  gainL.gain.exponentialRampToValueAtTime(0.0001, startTime + duration + releaseTime);
 
   gainR.gain.setValueAtTime(0, startTime);
-  gainR.gain.linearRampToValueAtTime(0.14, startTime + 0.25); // slow attack swell
-  gainR.gain.exponentialRampToValueAtTime(0.0001, startTime + duration + 0.8);
+  gainR.gain.linearRampToValueAtTime(instrumentGain, startTime + attackTime);
+  gainR.gain.setValueAtTime(instrumentGain, startTime + duration);
+  gainR.gain.exponentialRampToValueAtTime(0.0001, startTime + duration + releaseTime);
 
-  // Stereo panning
+  // Stereo panning to position instruments in the virtual orchestra space
   const panL = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
   const panR = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
-  if (panL) panL.pan.setValueAtTime(-0.3, startTime);
-  if (panR) panR.pan.setValueAtTime(0.3, startTime);
+  
+  // Violins panned left (-0.35), Violas near center/right (+0.1), Cellos panned right (+0.4)
+  let panPosL = -0.3;
+  let panPosR = 0.3;
+  if (instrument === "cello") {
+    panPosL = 0.25;
+    panPosR = 0.45;
+  } else if (instrument === "viola") {
+    panPosL = -0.1;
+    panPosR = 0.2;
+  } else {
+    panPosL = -0.45;
+    panPosR = -0.25;
+  }
 
-  // Connect routing
-  filterL.connect(gainL);
-  filterR.connect(gainR);
+  if (panL) panL.pan.setValueAtTime(panPosL, startTime);
+  if (panR) panR.pan.setValueAtTime(panPosR, startTime);
+
+  // Connect routing chains
+  filterL.connect(notchL);
+  notchL.connect(gainL);
+
+  filterR.connect(notchR);
+  notchR.connect(gainR);
 
   if (panL) {
     gainL.connect(panL);
@@ -609,20 +719,37 @@ function triggerStringNoteScheduled(freq, startTime, duration) {
     if (delayNodeR) gainR.connect(delayNodeR);
   }
 
-  // Create and connect the 5 sawtooth string voice oscillators
+  const stopTime = startTime + duration + releaseTime + 0.1;
+
+  // 3. Triangle Core Voice (anchors the fundamental frequency with warm woody resonance)
+  const oscTri = audioCtx.createOscillator();
+  oscTri.type = "triangle";
+  oscTri.frequency.setValueAtTime(freq, startTime);
+  lfoGain.connect(oscTri.frequency);
+
+  const voiceGainTri = audioCtx.createGain();
+  voiceGainTri.gain.setValueAtTime(1.1, startTime); // strong fundamental core
+  oscTri.connect(voiceGainTri);
+
+  voiceGainTri.connect(filterL);
+  voiceGainTri.connect(filterR);
+
+  oscTri.start(startTime);
+  oscTri.stop(stopTime);
+  oscTri.stopTime = stopTime;
+  oscillators.push(oscTri);
+
+  // 4. Detuned Sawtooth Voices (provides organic string ensemble friction/sheen)
   detunes.forEach((detune, idx) => {
     const osc = audioCtx.createOscillator();
     osc.type = "sawtooth";
     osc.frequency.setValueAtTime(freq * detune, startTime);
-    
-    // Connect LFO vibrato
     lfoGain.connect(osc.frequency);
 
     const voiceGain = audioCtx.createGain();
     voiceGain.gain.setValueAtTime(relativeGains[idx], startTime);
     osc.connect(voiceGain);
 
-    // Spread voices across the left and right lowpass filters
     if (idx % 2 === 0) {
       voiceGain.connect(filterL);
     } else {
@@ -630,12 +757,14 @@ function triggerStringNoteScheduled(freq, startTime, duration) {
     }
 
     osc.start(startTime);
-    osc.stop(startTime + duration + 0.9);
+    osc.stop(stopTime);
+    osc.stopTime = stopTime;
     oscillators.push(osc);
   });
 
   lfo.start(startTime);
-  lfo.stop(startTime + duration + 0.9);
+  lfo.stop(stopTime);
+  lfo.stopTime = stopTime;
   oscillators.push(lfo);
 
   return oscillators;
@@ -644,17 +773,38 @@ function triggerStringNoteScheduled(freq, startTime, duration) {
 function scheduleMelodyLoop(startTime) {
   const tempo = 84; // Wagner tempo
   const beatDuration = 60 / tempo;
-  
-  MELODY.forEach(step => {
-    const noteTime = startTime + step.beat * beatDuration;
-    const freq = NOTE_FREQS[step.note];
-    if (freq) {
-      const nodes = triggerStringNoteScheduled(freq, noteTime, step.duration * beatDuration);
-      if (nodes) {
-        scheduledNodes.push(...nodes);
-      }
-    }
+
+  // Clean up completed nodes from the array to prevent memory growth
+  const now = audioCtx ? audioCtx.currentTime : 0;
+  scheduledNodes = scheduledNodes.filter(node => {
+    return node.stopTime && node.stopTime > now;
   });
+
+  // Helper to schedule an instrument part
+  const scheduleLine = (line, instrument) => {
+    line.forEach(step => {
+      // Subtly humanize timing (micro-offsets of ±6ms)
+      const timeOffset = (Math.random() - 0.5) * 0.012;
+      const noteTime = startTime + step.beat * beatDuration + timeOffset;
+
+      // Subtly humanize pitch (micro-tuning differences of ±1.5 cents)
+      const pitchOffset = 1 + (Math.random() - 0.5) * 0.0015;
+      const freq = NOTE_FREQS[step.note] * pitchOffset;
+
+      if (freq) {
+        const duration = step.duration * beatDuration;
+        const nodes = triggerStringNoteScheduled(freq, noteTime, duration, instrument);
+        if (nodes) {
+          scheduledNodes.push(...nodes);
+        }
+      }
+    });
+  };
+
+  // Schedule all 3 string parts (Violin, Viola, Cello)
+  scheduleLine(MELODY, "violin");
+  scheduleLine(VIOLA_LINE, "viola");
+  scheduleLine(CELLO_LINE, "cello");
 
   // Schedule the next loop
   const nextLoopTime = startTime + LOOP_DURATION_BEATS * beatDuration;
