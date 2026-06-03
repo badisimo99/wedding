@@ -447,60 +447,66 @@ const NOTE_FREQS = {
 };
 
 const melodySeq = [
-  // Phrase 1: "Goin' to the chapel and we're..." (C Major)
-  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // C Major (C3, G3, C4, E4)
-  { note: "C5", dur: 0.5 },
-  { note: "C5", dur: 0.5 },
-  { note: "D5", dur: 1.0 },
-  { note: "C5", dur: 1.0 },
-  // "...gonna get married" (F Major)
-  { note: "A4", dur: 1.0, chord: [174.61, 220.00, 261.63, 349.23] }, // F Major (F3, A3, C4, F4)
-  { note: "C5", dur: 1.0 },
-  { note: "D5", dur: 1.0 },
-  { note: "C5", dur: 1.0 },
-  { note: "A4", dur: 1.0 },
-  { note: "C5", dur: 2.0 },
+  // Phrase 1: "Goin' to the chapel..." (C Major)
+  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // Go-
+  { note: "C5", dur: 0.5 }, // in'
+  { note: "C5", dur: 0.5 }, // to the
+  { note: "D5", dur: 1.0 }, // cha-
+  { note: "C5", dur: 1.0 }, // pel
   { note: "rest", dur: 1.0 },
+  // "...and we're gonna get married" (F Major)
+  { note: "A4", dur: 0.5, chord: [174.61, 220.00, 261.63, 349.23] }, // and
+  { note: "C5", dur: 0.5 }, // we're
+  { note: "D5", dur: 0.5 }, // gon-
+  { note: "C5", dur: 0.5 }, // na
+  { note: "A4", dur: 0.5 }, // get
+  { note: "C5", dur: 1.0 }, // mar-
+  { note: "C5", dur: 2.0 }, // ried
+  { note: "rest", dur: 1.5 },
 
-  // Phrase 2: "Goin' to the chapel and we're..." (C Major)
-  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // C Major
-  { note: "C5", dur: 0.5 },
-  { note: "C5", dur: 0.5 },
-  { note: "D5", dur: 1.0 },
-  { note: "C5", dur: 1.0 },
-  // "...gonna get married" (F Major)
-  { note: "A4", dur: 1.0, chord: [174.61, 220.00, 261.63, 349.23] }, // F Major
-  { note: "C5", dur: 1.0 },
-  { note: "D5", dur: 1.0 },
-  { note: "C5", dur: 1.0 },
-  { note: "A4", dur: 1.0 },
-  { note: "C5", dur: 2.0 },
+  // Phrase 2: "Goin' to the chapel..." (C Major)
+  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // Go-
+  { note: "C5", dur: 0.5 }, // in'
+  { note: "C5", dur: 0.5 }, // to the
+  { note: "D5", dur: 1.0 }, // cha-
+  { note: "C5", dur: 1.0 }, // pel
   { note: "rest", dur: 1.0 },
+  // "...and we're gonna get married" (F Major)
+  { note: "A4", dur: 0.5, chord: [174.61, 220.00, 261.63, 349.23] }, // and
+  { note: "C5", dur: 0.5 }, // we're
+  { note: "D5", dur: 0.5 }, // gon-
+  { note: "C5", dur: 0.5 }, // na
+  { note: "A4", dur: 0.5 }, // get
+  { note: "C5", dur: 1.0 }, // mar-
+  { note: "C5", dur: 2.0 }, // ried
+  { note: "rest", dur: 1.5 },
 
-  // Phrase 3: "Gee, I really love you and we're..." (C Major)
-  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // C Major
-  { note: "C5", dur: 0.5 },
-  { note: "C5", dur: 0.5 },
-  { note: "D5", dur: 1.0 },
-  { note: "C5", dur: 1.0 },
-  // "...gonna get married" (F Major)
-  { note: "A4", dur: 1.0, chord: [174.61, 220.00, 261.63, 349.23] }, // F Major
-  { note: "C5", dur: 1.0 },
-  { note: "D5", dur: 1.0 },
-  { note: "C5", dur: 1.0 },
-  { note: "A4", dur: 1.0 },
-  { note: "C5", dur: 2.0 },
+  // Phrase 3: "Gee, I really love you..." (C Major)
+  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // Gee,
+  { note: "C5", dur: 0.5 }, // I
+  { note: "C5", dur: 0.5 }, // real-ly
+  { note: "D5", dur: 1.0 }, // love
+  { note: "C5", dur: 1.0 }, // you
   { note: "rest", dur: 1.0 },
+  // "...and we're gonna get married" (F Major)
+  { note: "A4", dur: 0.5, chord: [174.61, 220.00, 261.63, 349.23] }, // and
+  { note: "C5", dur: 0.5 }, // we're
+  { note: "D5", dur: 0.5 }, // gon-
+  { note: "C5", dur: 0.5 }, // na
+  { note: "A4", dur: 0.5 }, // get
+  { note: "C5", dur: 1.0 }, // mar-
+  { note: "C5", dur: 2.0 }, // ried
+  { note: "rest", dur: 1.5 },
 
   // Phrase 4: "Goin' to the chapel of love" (C Major -> G Major)
-  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // C Major
-  { note: "C5", dur: 0.5 },
-  { note: "D5", dur: 0.5 },
-  { note: "E5", dur: 1.0 },
-  { note: "E5", dur: 1.0 },
-  { note: "D5", dur: 1.0, chord: [196.00, 246.94, 293.66, 392.00] }, // G Major (G3, B3, D4, G4)
-  { note: "C5", dur: 2.0 },
-  { note: "rest", dur: 4.0, chord: [130.81, 196.00, 261.63, 329.63] } // C Major (rest back to C Major)
+  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // Go-
+  { note: "C5", dur: 0.5 }, // in'
+  { note: "D5", dur: 0.5 }, // to the
+  { note: "E5", dur: 1.0 }, // cha-
+  { note: "E5", dur: 1.0 }, // pel
+  { note: "D5", dur: 1.0, chord: [196.00, 246.94, 293.66, 392.00] }, // of
+  { note: "C5", dur: 3.0 }, // love
+  { note: "rest", dur: 4.0, chord: [130.81, 196.00, 261.63, 329.63] } // rest back to C Major
 ];
 
 function startAmbientPad() {
