@@ -3,7 +3,7 @@ const DEFAULT_CONFIG = {
   names: "Sofia & Russell",
   date: "2026-10-08T17:00:00",
   location: "Marchand Ranch, Cañon City, CO",
-  tagline: "Are getting married! Please join us to celebrate our love and new beginnings.",
+  tagline: "Are getting hitched! Please join us to celebrate our love and the next step this exciting new journey.",
   theme: "ivory",
   webhookUrl: "https://script.google.com/macros/s/AKfycbzvR7KAfAh2Jld9AAloryj9W8npzj3S2DcH-TWJJPdD-T59W2h7yF4lzRw2BWws-_hW/exec"
 };
@@ -48,6 +48,11 @@ function loadConfig() {
       // Migrate old placeholder defaults automatically
       if (config.names === "Sophia & Julian" || config.names === "Sophia and Julian" || config.date === "2026-09-19T17:00:00") {
         config = { ...DEFAULT_CONFIG };
+        saveConfig();
+      }
+      // Migrate old tagline automatically
+      if (config.tagline === "Are getting married! Please join us to celebrate our love and new beginnings.") {
+        config.tagline = DEFAULT_CONFIG.tagline;
         saveConfig();
       }
       // Migrate empty or old broken webhooks to the new default automatically
