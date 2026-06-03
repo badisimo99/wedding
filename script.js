@@ -60,8 +60,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (isEditor) {
     const editBtn = document.getElementById("edit-btn");
     if (editBtn) editBtn.style.display = "flex";
-    const shareBtn = document.getElementById("share-btn");
-    if (shareBtn) shareBtn.style.display = "flex";
   }
 });
 

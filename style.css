@@ -643,7 +643,7 @@ main {
   }
 }
 
-#edit-btn, #share-btn {
+#edit-btn {
   display: none;
 }
 
