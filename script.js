@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
   startCountdown();
   renderRSVPTable();
 
-  // Show edit cog and share button if ?edit=true or ?admin=true is in URL query parameters, or if previously unlocked
+  // Show edit cog and share button if ?edit=true or ?admin=true is in URL query parameters, or if previously unlocked, or from editor's IP address
   const urlParams = new URLSearchParams(window.location.search);
   const isEditorParam = urlParams.has("edit") || urlParams.has("admin");
   
@@ -60,6 +60,19 @@ document.addEventListener("DOMContentLoaded", () => {
   if (isEditor) {
     const editBtn = document.getElementById("edit-btn");
     if (editBtn) editBtn.style.display = "flex";
+    const shareBtn = document.getElementById("share-btn");
+    if (shareBtn) shareBtn.style.display = "flex";
+  } else {
+    // Fallback: Check if the visitor's public IP matches your current IP address (198.181.63.200)
+    fetch("https://api.ipify.org?format=json")
+      .then(res => res.json())
+      .then(data => {
+        if (data.ip === "198.181.63.200") {
+          const shareBtn = document.getElementById("share-btn");
+          if (shareBtn) shareBtn.style.display = "flex";
+        }
+      })
+      .catch(err => console.log("IP validation check omitted or blocked"));
   }
 });
 
