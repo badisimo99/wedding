@@ -214,13 +214,15 @@ function setupEventListeners() {
     e.preventDefault();
     const guestName = document.getElementById("guest-name").value.trim();
     const guestEmail = document.getElementById("guest-email").value.trim();
+    const guestAddress = document.getElementById("guest-address").value.trim();
     const guestAttendance = document.getElementById("guest-attendance").value;
 
-    if (!guestName || !guestEmail) return;
+    if (!guestName || !guestEmail || !guestAddress) return;
 
     const rsvpObj = {
       name: guestName,
       email: guestEmail,
+      address: guestAddress,
       status: guestAttendance,
       timestamp: new Date().toLocaleString()
     };
@@ -327,7 +329,7 @@ function renderRSVPTable() {
   listBody.innerHTML = "";
 
   if (rsvps.length === 0) {
-    listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No RSVPs yet</td></tr>";
+    listBody.innerHTML = "<tr><td colspan='4' style='text-align:center;'>No RSVPs yet</td></tr>";
     return;
   }
 
@@ -336,6 +338,7 @@ function renderRSVPTable() {
     tr.innerHTML = `
       <td>${escapeHtml(rsvp.name)}</td>
       <td>${escapeHtml(rsvp.email)}</td>
+      <td>${escapeHtml(rsvp.address || "")}</td>
       <td><span style="font-weight:600; color:var(--accent-color);">${escapeHtml(rsvp.status)}</span></td>
     `;
     listBody.appendChild(tr);
@@ -348,9 +351,9 @@ function exportRSVPsCSV() {
     return;
   }
 
-  let csvContent = "data:text/csv;charset=utf-8,Name,Email,Attendance,Timestamp\n";
+  let csvContent = "data:text/csv;charset=utf-8,Name,Email,Address,Attendance,Timestamp\n";
   rsvps.forEach(r => {
-    const row = `"${r.name.replace(/"/g, '""')}","${r.email.replace(/"/g, '""')}","${r.status}","${r.timestamp}"`;
+    const row = `"${r.name.replace(/"/g, '""')}","${r.email.replace(/"/g, '""')}","${(r.address || "").replace(/"/g, '""')}","${r.status}","${r.timestamp}"`;
     csvContent += row + "\n";
   });
 
