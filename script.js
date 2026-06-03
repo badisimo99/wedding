@@ -1658,7 +1658,7 @@ function setupShareEventListeners() {
   if (smsBtn) {
     smsBtn.addEventListener("click", () => {
       const shareUrl = getCleanShareUrl();
-      const textMessage = `Sofia & Russell's Wedding Save the Date! 📅 October 8, 2026. View details, hear our wedding music, and RSVP at: ${shareUrl}`;
+      const textMessage = `Sofia & Russell's Wedding Save the Date! 📅 October 8, 2026. View details and RSVP at: ${shareUrl}`;
       window.open(`sms:?&body=${encodeURIComponent(textMessage)}`, "_blank");
     });
   }
