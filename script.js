@@ -17,7 +17,9 @@ let masterGain = null;
 let delayNode = null;
 let isAudioPlaying = false;
 let padOscs = [];
-let chimeTimer = null;
+let padLfos = [];
+let chimeTimer = null; // Reused as the melody sequence timeout
+let currentNoteIndex = 0;
 
 // Canvas Particles
 let canvas = null;
@@ -394,7 +396,7 @@ function toggleAudio() {
     masterGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2); // fade out over 1.2s
     isAudioPlaying = false;
     audioBtn.classList.remove("active");
-    clearInterval(chimeTimer);
+    clearTimeout(chimeTimer);
   } else {
     // Unmute/Play
     masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
@@ -429,56 +431,118 @@ function setupAudioNodes() {
   delayNode.connect(masterGain);
 }
 
-function startAmbientPad() {
-  // Clear any old oscillators
-  padOscs.forEach(osc => {
-    try { osc.stop(); } catch(e) {}
-  });
-  padOscs = [];
+// --- "Going to the Chapel of Love" Melody Sequence & Frequencies ---
+const NOTE_FREQS = {
+  "A4": 440.00,
+  "C5": 523.25,
+  "D5": 587.33,
+  "E5": 659.25,
+  "G5": 783.99,
+  "A5": 880.00,
+  "C6": 1046.50,
+  "D6": 1174.66,
+  "E6": 1318.51,
+  "G6": 1567.98,
+  "rest": 0
+};
 
-  // A romantic open chord: F major 9th or Db major 7th. Let's do Db Major (Db3, Ab3, F4, C5)
-  // Frequencies: Db3 = 138.59, Ab3 = 207.65, F4 = 349.23, C5 = 523.25
-  const baseFreqs = [138.59, 207.65, 349.23, 523.25];
+const melodySeq = [
+  // Phrase 1: "Goin' to the chapel and we're..." (C Major)
+  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // C Major (C3, G3, C4, E4)
+  { note: "C5", dur: 0.5 },
+  { note: "C5", dur: 0.5 },
+  { note: "D5", dur: 1.0 },
+  { note: "C5", dur: 1.0 },
+  // "...gonna get married" (F Major)
+  { note: "A4", dur: 1.0, chord: [174.61, 220.00, 261.63, 349.23] }, // F Major (F3, A3, C4, F4)
+  { note: "C5", dur: 1.0 },
+  { note: "D5", dur: 1.0 },
+  { note: "C5", dur: 1.0 },
+  { note: "A4", dur: 1.0 },
+  { note: "C5", dur: 2.0 },
+  { note: "rest", dur: 1.0 },
+
+  // Phrase 2: "Goin' to the chapel and we're..." (C Major)
+  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // C Major
+  { note: "C5", dur: 0.5 },
+  { note: "C5", dur: 0.5 },
+  { note: "D5", dur: 1.0 },
+  { note: "C5", dur: 1.0 },
+  // "...gonna get married" (F Major)
+  { note: "A4", dur: 1.0, chord: [174.61, 220.00, 261.63, 349.23] }, // F Major
+  { note: "C5", dur: 1.0 },
+  { note: "D5", dur: 1.0 },
+  { note: "C5", dur: 1.0 },
+  { note: "A4", dur: 1.0 },
+  { note: "C5", dur: 2.0 },
+  { note: "rest", dur: 1.0 },
+
+  // Phrase 3: "Gee, I really love you and we're..." (C Major)
+  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // C Major
+  { note: "C5", dur: 0.5 },
+  { note: "C5", dur: 0.5 },
+  { note: "D5", dur: 1.0 },
+  { note: "C5", dur: 1.0 },
+  // "...gonna get married" (F Major)
+  { note: "A4", dur: 1.0, chord: [174.61, 220.00, 261.63, 349.23] }, // F Major
+  { note: "C5", dur: 1.0 },
+  { note: "D5", dur: 1.0 },
+  { note: "C5", dur: 1.0 },
+  { note: "A4", dur: 1.0 },
+  { note: "C5", dur: 2.0 },
+  { note: "rest", dur: 1.0 },
+
+  // Phrase 4: "Goin' to the chapel of love" (C Major -> G Major)
+  { note: "C5", dur: 1.0, chord: [130.81, 196.00, 261.63, 329.63] }, // C Major
+  { note: "C5", dur: 0.5 },
+  { note: "D5", dur: 0.5 },
+  { note: "E5", dur: 1.0 },
+  { note: "E5", dur: 1.0 },
+  { note: "D5", dur: 1.0, chord: [196.00, 246.94, 293.66, 392.00] }, // G Major (G3, B3, D4, G4)
+  { note: "C5", dur: 2.0 },
+  { note: "rest", dur: 4.0, chord: [130.81, 196.00, 261.63, 329.63] } // C Major (rest back to C Major)
+];
+
+function startAmbientPad() {
+  // Clear any old oscillators and LFOs
+  padOscs.forEach(osc => { try { osc.stop(); } catch(e) {} });
+  padLfos.forEach(lfo => { try { lfo.stop(); } catch(e) {} });
+  padOscs = [];
+  padLfos = [];
+
+  // Start with C Major chord to match the melody key
+  const baseFreqs = [130.81, 196.00, 261.63, 329.63];
 
   baseFreqs.forEach(freq => {
     const osc = audioCtx.createOscillator();
     const oscGain = audioCtx.createGain();
     const lpf = audioCtx.createBiquadFilter();
 
-    // Soft warm triangle/sine blend (triangle sounds warm and organic)
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    
-    // Detune slightly for beautiful chorus effect
     osc.detune.setValueAtTime((Math.random() - 0.5) * 8, audioCtx.currentTime);
 
-    // Warm filter sweep (sweeping low pass filter)
     lpf.type = 'lowpass';
     lpf.Q.setValueAtTime(2, audioCtx.currentTime);
     lpf.frequency.setValueAtTime(600, audioCtx.currentTime);
 
-    // Dynamic modulation of the lowpass filter frequency (warm swelling)
     const lfo = audioCtx.createOscillator();
     const lfoGain = audioCtx.createGain();
-    lfo.frequency.value = 0.05 + Math.random() * 0.04; // super slow sweep (approx 20 seconds)
-    lfoGain.gain.value = 250; // Sweeps filter +/- 250Hz
+    lfo.frequency.value = 0.05 + Math.random() * 0.04;
+    lfoGain.gain.value = 250;
 
     lfo.connect(lfoGain);
     lfoGain.connect(lpf.frequency);
     lfo.start();
 
-    // Swelling volume envelopes for the pad voices
     oscGain.gain.setValueAtTime(0.01, audioCtx.currentTime);
     
-    // Setup connections
     osc.connect(lpf);
     lpf.connect(oscGain);
     oscGain.connect(masterGain);
     
     osc.start();
-    lfo.start();
 
-    // Constant swelling volume modulation
     const swellTime = 8 + Math.random() * 6;
     function swell() {
       if (!isAudioPlaying) return;
@@ -489,44 +553,49 @@ function startAmbientPad() {
     }
     swell();
 
-    // Keep reference to clean up
     padOscs.push(osc);
-    padOscs.push(lfo);
+    padLfos.push(lfo);
+  });
+}
+
+function changePadChord(freqs) {
+  if (!audioCtx || padOscs.length < freqs.length) return;
+  const t = audioCtx.currentTime;
+  padOscs.forEach((osc, index) => {
+    osc.frequency.cancelScheduledValues(t);
+    // Smoothly glide the pitches over 1.5 seconds for a premium synth chord change
+    osc.frequency.exponentialRampToValueAtTime(freqs[index], t + 1.5);
   });
 }
 
 function triggerProceduralChimes() {
-  if (chimeTimer) clearInterval(chimeTimer);
+  if (chimeTimer) clearTimeout(chimeTimer);
+  currentNoteIndex = 0;
 
   function playNext() {
     if (!isAudioPlaying) return;
-    playChimeMelody();
-    // Schedule next chime in 5 to 9 seconds
-    const delay = 5000 + Math.random() * 4000;
+
+    const tempo = 0.38; // 0.38 seconds per beat (perfect walking tempo)
+    const item = melodySeq[currentNoteIndex];
+    
+    // Change background chord dynamically if defined
+    if (item.chord) {
+      changePadChord(item.chord);
+    }
+
+    // Play note if not a rest
+    if (item.note !== "rest") {
+      const freq = NOTE_FREQS[item.note];
+      triggerBellNote(freq, audioCtx.currentTime);
+    }
+
+    currentNoteIndex = (currentNoteIndex + 1) % melodySeq.length;
+    
+    const delay = item.dur * tempo * 1000;
     chimeTimer = setTimeout(playNext, delay);
   }
   
-  // Start the scheduling
   playNext();
-}
-
-// Play single notes or a soft pentatonic chime cascade
-function playChimeMelody() {
-  if (!audioCtx || audioCtx.state === 'suspended' || !masterGain) return;
-
-  // A Major Pentatonic or Db Major Pentatonic scale notes
-  // Db pentatonic: Db5 (554.37), Eb5 (622.25), F5 (698.46), Ab5 (830.61), Bb5 (932.33), Db6 (1108.73)
-  const scale = [554.37, 622.25, 698.46, 830.61, 932.33, 1108.73];
-  
-  // Choose 2 to 3 notes to play in sequence (delightful bell chimes)
-  const notesCount = Math.floor(Math.random() * 2) + 2; 
-  let delayTimeOffset = 0;
-
-  for (let i = 0; i < notesCount; i++) {
-    const note = scale[Math.floor(Math.random() * scale.length)];
-    triggerBellNote(note, audioCtx.currentTime + delayTimeOffset);
-    delayTimeOffset += 0.25 + Math.random() * 0.15; // sweet syncopated rhythm
-  }
 }
 
 function triggerBellNote(frequency, startTime) {
