@@ -389,7 +389,7 @@ function exportRSVPsCSV() {
   document.body.removeChild(link);
 }
 
-// Chime Melody System (Web Audio API)
+// String Ensemble Melody System (Web Audio API)
 const NOTE_FREQS = {
   "A3": 220.00,
   "Bb3": 233.08,
@@ -536,54 +536,61 @@ function initAudioContext() {
   }
 }
 
-function triggerChimeNoteScheduled(freq, startTime, duration) {
+function triggerStringNoteScheduled(freq, startTime, duration) {
   if (!audioCtx) return null;
 
-  // Create oscillators for fundamental, detuned chorus, and sweet overtones
-  const osc1 = audioCtx.createOscillator(); // Fundamental Left
-  const osc1_detune = audioCtx.createOscillator(); // Fundamental Right (detuned for chorus width)
-  const osc2 = audioCtx.createOscillator(); // Overtone 2 (Octave above)
-  const osc3 = audioCtx.createOscillator(); // Overtone 3 (Octave + Fifth above)
-  const osc4 = audioCtx.createOscillator(); // Overtone 4 (Double octave above)
+  const oscillators = [];
 
-  osc1.type = "sine";
-  osc1.frequency.setValueAtTime(freq, startTime);
+  // Define detuning factors for 5 string voices to create a thick chorus section
+  const detunes = [1.0, 0.996, 1.004, 1.998, 2.002];
+  const relativeGains = [0.15, 0.12, 0.12, 0.08, 0.08];
 
-  osc1_detune.type = "sine";
-  osc1_detune.frequency.setValueAtTime(freq * 1.003, startTime); // detuned
+  // LFO for natural vibrato (pitch oscillation) at 5.8Hz
+  const lfo = audioCtx.createOscillator();
+  lfo.type = "sine";
+  lfo.frequency.setValueAtTime(5.8, startTime);
 
-  osc2.type = "sine";
-  osc2.frequency.setValueAtTime(freq * 2.0, startTime);
+  const lfoGain = audioCtx.createGain();
+  lfoGain.gain.setValueAtTime(freq * 0.005, startTime); // subtle pitch depth
 
-  osc3.type = "sine";
-  osc3.frequency.setValueAtTime(freq * 3.0, startTime);
+  lfo.connect(lfoGain);
 
-  osc4.type = "sine";
-  osc4.frequency.setValueAtTime(freq * 4.0, startTime);
+  // Warm Lowpass Filters to smooth out the sawtooth buzz
+  const filterL = audioCtx.createBiquadFilter();
+  filterL.type = "lowpass";
+  filterL.frequency.setValueAtTime(1200, startTime);
+  filterL.frequency.exponentialRampToValueAtTime(700, startTime + duration); // sweeps warmer
+  filterL.Q.setValueAtTime(1.0, startTime);
 
-  // Gains
+  const filterR = audioCtx.createBiquadFilter();
+  filterR.type = "lowpass";
+  filterR.frequency.setValueAtTime(1200, startTime);
+  filterR.frequency.exponentialRampToValueAtTime(700, startTime + duration);
+  filterR.Q.setValueAtTime(1.0, startTime);
+
+  // Master Gain for Left and Right channels
   const gainL = audioCtx.createGain();
   const gainR = audioCtx.createGain();
 
-  // Smooth attack and long, elegant exponential release decay
+  // String attack envelope: 250ms breathing swell fade-in, and 800ms release decay fade-out
   gainL.gain.setValueAtTime(0, startTime);
-  gainL.gain.linearRampToValueAtTime(0.12, startTime + 0.012); // smooth attack
-  gainL.gain.exponentialRampToValueAtTime(0.0001, startTime + Math.max(duration * 1.5, 2.5));
+  gainL.gain.linearRampToValueAtTime(0.14, startTime + 0.25); // slow attack swell
+  gainL.gain.exponentialRampToValueAtTime(0.0001, startTime + duration + 0.8); // release
 
   gainR.gain.setValueAtTime(0, startTime);
-  gainR.gain.linearRampToValueAtTime(0.12, startTime + 0.012); // smooth attack
-  gainR.gain.exponentialRampToValueAtTime(0.0001, startTime + Math.max(duration * 1.5, 2.5));
+  gainR.gain.linearRampToValueAtTime(0.14, startTime + 0.25); // slow attack swell
+  gainR.gain.exponentialRampToValueAtTime(0.0001, startTime + duration + 0.8);
 
-  // Stereo panning for lush auditory image
+  // Stereo panning
   const panL = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
   const panR = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
-  if (panL) panL.pan.setValueAtTime(-0.35, startTime);
-  if (panR) panR.pan.setValueAtTime(0.35, startTime);
+  if (panL) panL.pan.setValueAtTime(-0.3, startTime);
+  if (panR) panR.pan.setValueAtTime(0.3, startTime);
 
-  // Connect Left channel
-  osc1.connect(gainL);
-  osc2.connect(gainL);
-  
+  // Connect routing
+  filterL.connect(gainL);
+  filterR.connect(gainR);
+
   if (panL) {
     gainL.connect(panL);
     panL.connect(masterGain);
@@ -593,11 +600,6 @@ function triggerChimeNoteScheduled(freq, startTime, duration) {
     if (delayNodeL) gainL.connect(delayNodeL);
   }
 
-  // Connect Right channel
-  osc1_detune.connect(gainR);
-  osc3.connect(gainR);
-  osc4.connect(gainR);
-  
   if (panR) {
     gainR.connect(panR);
     panR.connect(masterGain);
@@ -607,22 +609,36 @@ function triggerChimeNoteScheduled(freq, startTime, duration) {
     if (delayNodeR) gainR.connect(delayNodeR);
   }
 
-  // Start nodes
-  osc1.start(startTime);
-  osc1_detune.start(startTime);
-  osc2.start(startTime);
-  osc3.start(startTime);
-  osc4.start(startTime);
+  // Create and connect the 5 sawtooth string voice oscillators
+  detunes.forEach((detune, idx) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(freq * detune, startTime);
+    
+    // Connect LFO vibrato
+    lfoGain.connect(osc.frequency);
 
-  // Stop nodes slightly after the decay envelope finishes
-  const stopTime = startTime + 3.0;
-  osc1.stop(stopTime);
-  osc1_detune.stop(stopTime);
-  osc2.stop(stopTime);
-  osc3.stop(stopTime);
-  osc4.stop(stopTime);
+    const voiceGain = audioCtx.createGain();
+    voiceGain.gain.setValueAtTime(relativeGains[idx], startTime);
+    osc.connect(voiceGain);
 
-  return [osc1, osc1_detune, osc2, osc3, osc4];
+    // Spread voices across the left and right lowpass filters
+    if (idx % 2 === 0) {
+      voiceGain.connect(filterL);
+    } else {
+      voiceGain.connect(filterR);
+    }
+
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.9);
+    oscillators.push(osc);
+  });
+
+  lfo.start(startTime);
+  lfo.stop(startTime + duration + 0.9);
+  oscillators.push(lfo);
+
+  return oscillators;
 }
 
 function scheduleMelodyLoop(startTime) {
@@ -633,7 +649,7 @@ function scheduleMelodyLoop(startTime) {
     const noteTime = startTime + step.beat * beatDuration;
     const freq = NOTE_FREQS[step.note];
     if (freq) {
-      const nodes = triggerChimeNoteScheduled(freq, noteTime, step.duration * beatDuration);
+      const nodes = triggerStringNoteScheduled(freq, noteTime, step.duration * beatDuration);
       if (nodes) {
         scheduledNodes.push(...nodes);
       }
