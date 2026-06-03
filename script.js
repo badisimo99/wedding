@@ -3,7 +3,7 @@ const DEFAULT_CONFIG = {
   names: "Sofia & Russell",
   date: "2026-10-08T17:00:00",
   location: "Marchand Ranch, Cañon City, CO",
-  tagline: "Are getting hitched! Please join us to celebrate our love as we take this exciting next step in our journey.",
+  tagline: "We're getting hitched! Please join us to celebrate our love as we take this exciting next step in our journey.",
   theme: "ivory",
   webhookUrl: "https://script.google.com/macros/s/AKfycbzvR7KAfAh2Jld9AAloryj9W8npzj3S2DcH-TWJJPdD-T59W2h7yF4lzRw2BWws-_hW/exec"
 };
@@ -55,7 +55,12 @@ function loadConfig() {
       }
       // Migrate old tagline automatically
       if (config.tagline === "Are getting married! Please join us to celebrate our love and new beginnings." ||
-          config.tagline === "Are getting hitched! Please join us to celebrate our love and the next step this exciting new journey.") {
+          config.tagline === "Are getting hitched! Please join us to celebrate our love and the next step this exciting new journey." ||
+          config.tagline === "Are getting hitched! Please join us to celebrate our love as we take this exciting next step in our journey." ||
+          config.tagline.includes("Are getting hitched") ||
+          config.tagline.includes("Are getting married") ||
+          config.tagline.includes("Sofia & Russell Are getting hitched") ||
+          config.tagline.includes("Sofia & Russell We're getting hitched")) {
         config.tagline = DEFAULT_CONFIG.tagline;
         saveConfig();
       }
@@ -391,65 +396,71 @@ const NOTE_FREQS = {
   "G5": 783.99
 };
 
+// Chime Melody System (Web Audio API)
+const NOTE_FREQS = {
+  "A3": 220.00,
+  "B3": 246.94,
+  "C#4": 277.18,
+  "D4": 293.66,
+  "D#4": 311.13,
+  "E4": 329.63,
+  "F#4": 369.99,
+  "G4": 392.00,
+  "A4": 440.00,
+  "B4": 493.88,
+  "C#5": 554.37,
+  "D5": 587.33,
+  "E5": 659.25
+};
+
 const MELODY = [
   // Line 1: Goin' to the chapel and we're gonna get married
-  { note: "B4", beats: 1.0 },
-  { note: "B4", beats: 0.5 },
-  { note: "C5", beats: 0.5 },
-  { note: "B4", beats: 1.0 },
-  { note: "G4", beats: 2.0 },
+  { note: "F#4", beats: 1.0 },
+  { note: "D4", beats: 0.5 },
+  { note: "E4", beats: 0.5 },
+  { note: "D4", beats: 1.5 },
+  { note: "REST", beats: 0.5 },
+  { note: "A3", beats: 1.0 },
+  { note: "B3", beats: 0.5 },
+  { note: "C#4", beats: 0.5 },
+  { note: "F#4", beats: 1.5 },
   { note: "REST", beats: 1.0 },
-  { note: "G4", beats: 1.0 },
-  { note: "G4", beats: 0.5 },
-  { note: "A4", beats: 0.5 },
-  { note: "B4", beats: 1.0 },
-  { note: "A4", beats: 1.0 },
-  { note: "G4", beats: 1.0 },
-  { note: "G4", beats: 2.0 },
-  { note: "REST", beats: 3.0 },
 
   // Line 2: Goin' to the chapel and we're gonna get married
-  { note: "B4", beats: 1.0 },
-  { note: "B4", beats: 0.5 },
-  { note: "C5", beats: 0.5 },
-  { note: "B4", beats: 1.0 },
-  { note: "G4", beats: 2.0 },
-  { note: "REST", beats: 1.0 },
-  { note: "G4", beats: 1.0 },
+  { note: "D4", beats: 1.0 },
+  { note: "E4", beats: 0.5 },
+  { note: "D4", beats: 0.5 },
+  { note: "C#4", beats: 1.5 },
+  { note: "REST", beats: 0.5 },
+  { note: "D4", beats: 1.0 },
+  { note: "D#4", beats: 0.5 },
   { note: "G4", beats: 0.5 },
-  { note: "A4", beats: 0.5 },
-  { note: "B4", beats: 1.0 },
-  { note: "A4", beats: 1.0 },
-  { note: "G4", beats: 1.0 },
-  { note: "A4", beats: 2.0 },
-  { note: "REST", beats: 3.0 },
+  { note: "G4", beats: 1.5 },
+  { note: "REST", beats: 1.0 },
 
   // Line 3: Gee, I really love you and we're gonna get married
-  { note: "D5", beats: 1.0 },
-  { note: "D5", beats: 0.5 },
-  { note: "D5", beats: 0.5 },
-  { note: "B4", beats: 1.0 },
-  { note: "D5", beats: 1.0 },
-  { note: "B4", beats: 1.0 },
-  { note: "REST", beats: 1.0 },
+  { note: "E4", beats: 1.0 },
+  { note: "F#4", beats: 0.5 },
+  { note: "E4", beats: 0.5 },
+  { note: "B3", beats: 1.5 },
+  { note: "REST", beats: 0.5 },
   { note: "G4", beats: 1.0 },
-  { note: "G4", beats: 0.5 },
-  { note: "A4", beats: 0.5 },
-  { note: "B4", beats: 1.0 },
-  { note: "A4", beats: 1.0 },
-  { note: "G4", beats: 1.0 },
-  { note: "A4", beats: 2.0 },
-  { note: "REST", beats: 3.0 },
+  { note: "F#4", beats: 0.5 },
+  { note: "F#4", beats: 0.5 },
+  { note: "E4", beats: 1.5 },
+  { note: "F#4", beats: 1.5 },
+  { note: "REST", beats: 0.5 },
 
   // Line 4: Goin' to the chapel of love
-  { note: "B4", beats: 1.0 },
-  { note: "B4", beats: 0.5 },
-  { note: "C5", beats: 0.5 },
-  { note: "B4", beats: 1.0 },
-  { note: "G4", beats: 1.0 },
-  { note: "G4", beats: 1.0 },
-  { note: "A4", beats: 1.0 },
-  { note: "G4", beats: 2.0 },
+  { note: "F#4", beats: 1.0 },
+  { note: "E4", beats: 0.5 },
+  { note: "D4", beats: 0.5 },
+  { note: "F#4", beats: 1.5 },
+  { note: "REST", beats: 0.5 },
+  { note: "E4", beats: 1.0 },
+  { note: "F#4", beats: 0.5 },
+  { note: "E4", beats: 0.5 },
+  { note: "D4", beats: 2.0 },
   { note: "REST", beats: 8.0 }
 ];
 
