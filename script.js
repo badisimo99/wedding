@@ -399,12 +399,12 @@ const MELODY = [
   { note: "D5", beats: 1.0 },
   { note: "B4", beats: 2.0 },
   { note: "REST", beats: 1.0 },
-  { note: "D5", beats: 1.0 },
+  { note: "B4", beats: 1.0 },
   { note: "D5", beats: 0.5 },
   { note: "E5", beats: 0.5 },
+  { note: "F#5", beats: 1.0 },
+  { note: "G5", beats: 1.0 },
   { note: "D5", beats: 1.0 },
-  { note: "B4", beats: 1.0 },
-  { note: "A4", beats: 1.0 },
   { note: "G4", beats: 2.0 },
   { note: "REST", beats: 3.0 },
 
@@ -415,12 +415,12 @@ const MELODY = [
   { note: "D5", beats: 1.0 },
   { note: "B4", beats: 2.0 },
   { note: "REST", beats: 1.0 },
-  { note: "D5", beats: 1.0 },
+  { note: "B4", beats: 1.0 },
   { note: "D5", beats: 0.5 },
   { note: "E5", beats: 0.5 },
+  { note: "F#5", beats: 1.0 },
+  { note: "G5", beats: 1.0 },
   { note: "D5", beats: 1.0 },
-  { note: "B4", beats: 1.0 },
-  { note: "A4", beats: 1.0 },
   { note: "G4", beats: 2.0 },
   { note: "REST", beats: 3.0 },
 
@@ -432,12 +432,12 @@ const MELODY = [
   { note: "G5", beats: 1.0 },
   { note: "E5", beats: 1.0 },
   { note: "REST", beats: 1.0 },
-  { note: "D5", beats: 1.0 },
+  { note: "B4", beats: 1.0 },
   { note: "D5", beats: 0.5 },
   { note: "E5", beats: 0.5 },
+  { note: "F#5", beats: 1.0 },
+  { note: "G5", beats: 1.0 },
   { note: "D5", beats: 1.0 },
-  { note: "B4", beats: 1.0 },
-  { note: "A4", beats: 1.0 },
   { note: "G4", beats: 2.0 },
   { note: "REST", beats: 3.0 },
 
@@ -482,18 +482,7 @@ function triggerChimeNote(freq) {
       
       masterGain = audioCtx.createGain();
       masterGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
-      
-      delayNode = audioCtx.createDelay(1.0);
-      delayNode.delayTime.setValueAtTime(0.35, audioCtx.currentTime);
-      
-      const feedbackGain = audioCtx.createGain();
-      feedbackGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
-      
-      delayNode.connect(feedbackGain);
-      feedbackGain.connect(delayNode);
-      
       masterGain.connect(audioCtx.destination);
-      delayNode.connect(masterGain);
     } catch (err) {
       console.error("Failed to initialize Web Audio API:", err);
       return;
@@ -528,10 +517,7 @@ function triggerChimeNote(freq) {
   osc2.connect(overtoneGain);
 
   noteGain.connect(masterGain);
-  noteGain.connect(delayNode);
-
   overtoneGain.connect(masterGain);
-  overtoneGain.connect(delayNode);
 
   osc1.start(now);
   osc2.start(now);
