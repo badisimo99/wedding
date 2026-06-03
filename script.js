@@ -386,18 +386,6 @@ function exportRSVPsCSV() {
 
 // Chime Melody System (Web Audio API)
 const NOTE_FREQS = {
-  "G4": 392.00,
-  "A4": 440.00,
-  "B4": 493.88,
-  "C5": 523.25,
-  "D5": 587.33,
-  "E5": 659.25,
-  "F#5": 739.99,
-  "G5": 783.99
-};
-
-// Chime Melody System (Web Audio API)
-const NOTE_FREQS = {
   "A3": 220.00,
   "B3": 246.94,
   "C#4": 277.18,
