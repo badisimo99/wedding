@@ -568,6 +568,7 @@ function resizeCanvas() {
 }
 
 function resetParticles() {
+  if (!canvas) return;
   particles = [];
   const maxParticles = window.innerWidth < 600 ? 25 : 55;
   const theme = config.theme;
