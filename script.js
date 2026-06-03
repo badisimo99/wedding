@@ -25,6 +25,10 @@ let convolverNode = null;
 let reverbGain = null;
 let preDelayNode = null;
 let schedulerInterval = null;
+let violinFilterL = null, violinFilterR = null;
+let violaFilterL = null, violaFilterR = null;
+let celloFilterL = null, celloFilterR = null;
+let globalBowingLFO = null, globalBowingGain = null;
 
 
 
@@ -563,15 +567,15 @@ function initAudioContext() {
     masterGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
     masterGain.connect(audioCtx.destination);
 
-    // 1. Setup Procedural Cathedral Convolution Reverb
+    // 1. Setup Procedural Cathedral Convolution Reverb Send Effect
     convolverNode = audioCtx.createConvolver();
-    convolverNode.buffer = createCathedralImpulseResponse(audioCtx, 3.8, 2.6);
+    convolverNode.buffer = createCathedralImpulseResponse(audioCtx, 4.0, 2.8);
 
     preDelayNode = audioCtx.createDelay(0.5);
-    preDelayNode.delayTime.setValueAtTime(0.045, audioCtx.currentTime); // 45ms pre-delay
+    preDelayNode.delayTime.setValueAtTime(0.050, audioCtx.currentTime); // 50ms pre-delay
 
     reverbGain = audioCtx.createGain();
-    reverbGain.gain.setValueAtTime(0.30, audioCtx.currentTime); // 30% wet mix
+    reverbGain.gain.setValueAtTime(0.32, audioCtx.currentTime); // 32% wet mix
 
     // Connect convolution reverb chain
     preDelayNode.connect(convolverNode);
@@ -618,6 +622,142 @@ function initAudioContext() {
     }
     
     delayDryWet.connect(masterGain);
+
+    // 3. Setup Global Channel Strips (Consolidated click-free processing)
+    // Violin Channel strip (L/R): Lowpass -> Highshelf EQ -> Lowshelf EQ -> Output
+    violinFilterL = audioCtx.createBiquadFilter();
+    violinFilterL.type = "lowpass";
+    violinFilterL.frequency.setValueAtTime(1400, audioCtx.currentTime);
+    violinFilterL.Q.setValueAtTime(1.0, audioCtx.currentTime);
+
+    violinFilterR = audioCtx.createBiquadFilter();
+    violinFilterR.type = "lowpass";
+    violinFilterR.frequency.setValueAtTime(1400, audioCtx.currentTime);
+    violinFilterR.Q.setValueAtTime(1.0, audioCtx.currentTime);
+
+    const violinHighL = audioCtx.createBiquadFilter();
+    violinHighL.type = "highshelf";
+    violinHighL.frequency.setValueAtTime(6000, audioCtx.currentTime);
+    violinHighL.gain.setValueAtTime(3.5, audioCtx.currentTime);
+
+    const violinHighR = audioCtx.createBiquadFilter();
+    violinHighR.type = "highshelf";
+    violinHighR.frequency.setValueAtTime(6000, audioCtx.currentTime);
+    violinHighR.gain.setValueAtTime(3.5, audioCtx.currentTime);
+
+    const violinLowL = audioCtx.createBiquadFilter();
+    violinLowL.type = "lowshelf";
+    violinLowL.frequency.setValueAtTime(200, audioCtx.currentTime);
+    violinLowL.gain.setValueAtTime(-4.0, audioCtx.currentTime);
+
+    const violinLowR = audioCtx.createBiquadFilter();
+    violinLowR.type = "lowshelf";
+    violinLowR.frequency.setValueAtTime(200, audioCtx.currentTime);
+    violinLowR.gain.setValueAtTime(-4.0, audioCtx.currentTime);
+
+    violinFilterL.connect(violinHighL);
+    violinHighL.connect(violinLowL);
+    violinLowL.connect(masterGain);
+    if (preDelayNode) violinLowL.connect(preDelayNode);
+
+    violinFilterR.connect(violinHighR);
+    violinHighR.connect(violinLowR);
+    violinLowR.connect(masterGain);
+    if (preDelayNode) violinLowR.connect(preDelayNode);
+
+    // Viola Channel strip (L/R): Lowpass -> Mid Warmth EQ -> Output
+    violaFilterL = audioCtx.createBiquadFilter();
+    violaFilterL.type = "lowpass";
+    violaFilterL.frequency.setValueAtTime(950, audioCtx.currentTime);
+    violaFilterL.Q.setValueAtTime(1.0, audioCtx.currentTime);
+
+    violaFilterR = audioCtx.createBiquadFilter();
+    violaFilterR.type = "lowpass";
+    violaFilterR.frequency.setValueAtTime(950, audioCtx.currentTime);
+    violaFilterR.Q.setValueAtTime(1.0, audioCtx.currentTime);
+
+    const violaPeakL = audioCtx.createBiquadFilter();
+    violaPeakL.type = "peaking";
+    violaPeakL.frequency.setValueAtTime(250, audioCtx.currentTime);
+    violaPeakL.Q.setValueAtTime(1.0, audioCtx.currentTime);
+    violaPeakL.gain.setValueAtTime(2.5, audioCtx.currentTime);
+
+    const violaPeakR = audioCtx.createBiquadFilter();
+    violaPeakR.type = "peaking";
+    violaPeakR.frequency.setValueAtTime(250, audioCtx.currentTime);
+    violaPeakR.Q.setValueAtTime(1.0, audioCtx.currentTime);
+    violaPeakR.gain.setValueAtTime(2.5, audioCtx.currentTime);
+
+    violaFilterL.connect(violaPeakL);
+    violaPeakL.connect(masterGain);
+    if (preDelayNode) violaPeakL.connect(preDelayNode);
+
+    violaFilterR.connect(violaPeakR);
+    violaPeakR.connect(masterGain);
+    if (preDelayNode) violaPeakR.connect(preDelayNode);
+
+    // Cello Channel strip (L/R): Lowpass -> Bass Boost EQ -> Highshelf EQ -> Output
+    celloFilterL = audioCtx.createBiquadFilter();
+    celloFilterL.type = "lowpass";
+    celloFilterL.frequency.setValueAtTime(650, audioCtx.currentTime);
+    celloFilterL.Q.setValueAtTime(1.0, audioCtx.currentTime);
+
+    celloFilterR = audioCtx.createBiquadFilter();
+    celloFilterR.type = "lowpass";
+    celloFilterR.frequency.setValueAtTime(650, audioCtx.currentTime);
+    celloFilterR.Q.setValueAtTime(1.0, audioCtx.currentTime);
+
+    const celloPeakL = audioCtx.createBiquadFilter();
+    celloPeakL.type = "peaking";
+    celloPeakL.frequency.setValueAtTime(90, audioCtx.currentTime);
+    celloPeakL.Q.setValueAtTime(1.2, audioCtx.currentTime);
+    celloPeakL.gain.setValueAtTime(4.5, audioCtx.currentTime);
+
+    const celloPeakR = audioCtx.createBiquadFilter();
+    celloPeakR.type = "peaking";
+    celloPeakR.frequency.setValueAtTime(90, audioCtx.currentTime);
+    celloPeakR.Q.setValueAtTime(1.2, audioCtx.currentTime);
+    celloPeakR.gain.setValueAtTime(4.5, audioCtx.currentTime);
+
+    const celloHighL = audioCtx.createBiquadFilter();
+    celloHighL.type = "highshelf";
+    celloHighL.frequency.setValueAtTime(4000, audioCtx.currentTime);
+    celloHighL.gain.setValueAtTime(-3.0, audioCtx.currentTime);
+
+    const celloHighR = audioCtx.createBiquadFilter();
+    celloHighR.type = "highshelf";
+    celloHighR.frequency.setValueAtTime(4000, audioCtx.currentTime);
+    celloHighR.gain.setValueAtTime(-3.0, audioCtx.currentTime);
+
+    celloFilterL.connect(celloPeakL);
+    celloPeakL.connect(celloHighL);
+    celloHighL.connect(masterGain);
+    if (preDelayNode) celloHighL.connect(preDelayNode);
+
+    celloFilterR.connect(celloPeakR);
+    celloPeakR.connect(celloHighR);
+    celloHighR.connect(masterGain);
+    if (preDelayNode) celloHighR.connect(preDelayNode);
+
+    // 4. Setup Global Bowing Pressure Modulation LFO
+    globalBowingLFO = audioCtx.createOscillator();
+    globalBowingLFO.type = "sine";
+    globalBowingLFO.frequency.setValueAtTime(0.28, audioCtx.currentTime); // 0.28Hz slow breathing
+
+    globalBowingGain = audioCtx.createGain();
+    globalBowingGain.gain.setValueAtTime(110, audioCtx.currentTime); // Modulate cutoffs ±110Hz
+
+    globalBowingLFO.connect(globalBowingGain);
+    
+    // Connect modulator to all Lowpass filter cutoffs
+    globalBowingGain.connect(violinFilterL.frequency);
+    globalBowingGain.connect(violinFilterR.frequency);
+    globalBowingGain.connect(violaFilterL.frequency);
+    globalBowingGain.connect(violaFilterR.frequency);
+    globalBowingGain.connect(celloFilterL.frequency);
+    globalBowingGain.connect(celloFilterR.frequency);
+
+    globalBowingLFO.start();
   } catch (err) {
     console.error("Failed to initialize Web Audio API:", err);
   }
@@ -628,9 +768,9 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
 
   const oscillators = [];
 
-  // Detune spread and relative gains for 5 chorus-detuned voices
-  const detunes = [1.0, 0.996, 1.004, 1.998, 2.002];
-  const relativeGains = [0.24, 0.18, 0.18, 0.10, 0.10];
+  // Detuning factors and gains for 5 chorus-detuned voice oscillators
+  const detunes = [1.0, 0.995, 1.005, 1.997, 2.003];
+  const relativeGains = [0.20, 0.14, 0.14, 0.08, 0.08];
 
   // Set instrument-specific parameters
   let attackTime = 0.22;
@@ -711,35 +851,102 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
   if (panL) panL.pan.setValueAtTime(panPosL, startTime);
   if (panR) panR.pan.setValueAtTime(panPosR, startTime);
 
-  // Connect routing chains directly from gain to master and reverb inputs
+  // Connect panned envelope outputs to the global mixing channel strips and delays
   if (panL) {
     gainL.connect(panL);
-    panL.connect(masterGain);
-    if (preDelayNode) panL.connect(preDelayNode);
+    if (instrument === "cello") {
+      panL.connect(celloFilterL);
+    } else if (instrument === "viola") {
+      panL.connect(violaFilterL);
+    } else {
+      panL.connect(violinFilterL);
+    }
     if (delayNodeL) panL.connect(delayNodeL);
   } else {
-    gainL.connect(masterGain);
-    if (preDelayNode) gainL.connect(preDelayNode);
+    if (instrument === "cello") {
+      gainL.connect(celloFilterL);
+    } else if (instrument === "viola") {
+      gainL.connect(violaFilterL);
+    } else {
+      gainL.connect(violinFilterL);
+    }
     if (delayNodeL) gainL.connect(delayNodeL);
   }
 
   if (panR) {
     gainR.connect(panR);
-    panR.connect(masterGain);
-    if (preDelayNode) panR.connect(preDelayNode);
+    if (instrument === "cello") {
+      panR.connect(celloFilterR);
+    } else if (instrument === "viola") {
+      panR.connect(violaFilterR);
+    } else {
+      panR.connect(violinFilterR);
+    }
     if (delayNodeR) panR.connect(delayNodeR);
   } else {
-    gainR.connect(masterGain);
-    if (preDelayNode) gainR.connect(preDelayNode);
+    if (instrument === "cello") {
+      gainR.connect(celloFilterR);
+    } else if (instrument === "viola") {
+      gainR.connect(violaFilterR);
+    } else {
+      gainR.connect(violinFilterR);
+    }
     if (delayNodeR) gainR.connect(delayNodeR);
   }
 
   const stopTime = startTime + duration + releaseTime + 0.1;
 
-  // Create and connect the 5 detuned Triangle string voice oscillators
+  // 2. Synthesize Bow Scrape Noise Transient (~70ms bandpass white noise burst)
+  const noiseLength = audioCtx.sampleRate * 0.07;
+  const noiseBuffer = audioCtx.createBuffer(1, noiseLength, audioCtx.sampleRate);
+  const noiseData = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < noiseLength; i++) {
+    noiseData[i] = Math.random() * 2 - 1;
+  }
+
+  const noiseNode = audioCtx.createBufferSource();
+  noiseNode.buffer = noiseBuffer;
+
+  const noiseFilter = audioCtx.createBiquadFilter();
+  noiseFilter.type = "bandpass";
+  noiseFilter.frequency.setValueAtTime(1100, startTime);
+  noiseFilter.Q.setValueAtTime(1.5, startTime);
+
+  const noiseGain = audioCtx.createGain();
+  noiseGain.gain.setValueAtTime(0, startTime);
+  noiseGain.gain.linearRampToValueAtTime(instrumentGain * 0.14, startTime + 0.005);
+  noiseGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.06);
+
+  noiseNode.connect(noiseFilter);
+  noiseFilter.connect(noiseGain);
+  noiseGain.connect(gainL);
+  noiseGain.connect(gainR);
+
+  noiseNode.start(startTime);
+  oscillators.push(noiseNode);
+
+  // 3. Triangle Core Voice (warm acoustic body core)
+  const oscTri = audioCtx.createOscillator();
+  oscTri.type = "triangle";
+  oscTri.frequency.setValueAtTime(freq, startTime);
+  lfoGain.connect(oscTri.frequency);
+
+  const voiceGainTri = audioCtx.createGain();
+  voiceGainTri.gain.setValueAtTime(0.22, startTime);
+  oscTri.connect(voiceGainTri);
+
+  voiceGainTri.connect(gainL);
+  voiceGainTri.connect(gainR);
+
+  oscTri.start(startTime);
+  oscTri.stop(stopTime);
+  oscTri.stopTime = stopTime;
+  oscillators.push(oscTri);
+
+  // 4. Detuned Sawtooth Voices (provides organic bowed friction and brilliance)
   detunes.forEach((detune, idx) => {
     const osc = audioCtx.createOscillator();
-    osc.type = "triangle";
+    osc.type = "sawtooth";
     osc.frequency.setValueAtTime(freq * detune, startTime);
     lfoGain.connect(osc.frequency);
 
@@ -758,6 +965,24 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
     osc.stopTime = stopTime;
     oscillators.push(osc);
   });
+
+  // 5. Third Harmonic Sine Voice (adds hollow acoustic depth)
+  const oscSine = audioCtx.createOscillator();
+  oscSine.type = "sine";
+  oscSine.frequency.setValueAtTime(freq * 3.0, startTime);
+  lfoGain.connect(oscSine.frequency);
+
+  const voiceGainSine = audioCtx.createGain();
+  voiceGainSine.gain.setValueAtTime(0.06, startTime);
+  oscSine.connect(voiceGainSine);
+
+  voiceGainSine.connect(gainL);
+  voiceGainSine.connect(gainR);
+
+  oscSine.start(startTime);
+  oscSine.stop(stopTime);
+  oscSine.stopTime = stopTime;
+  oscillators.push(oscSine);
 
   lfo.start(startTime);
   lfo.stop(stopTime);
