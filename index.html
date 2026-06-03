@@ -21,6 +21,13 @@
         <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
       </svg>
     </button>
+    <!-- Share Invitation -->
+    <button id="share-btn" class="control-btn" aria-label="Share this invitation" title="Share Invitation">
+      <svg viewBox="0 0 24 24">
+        <!-- Share icon -->
+        <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>
+      </svg>
+    </button>
     <!-- Edit Design Settings Panel -->
     <button id="edit-btn" class="control-btn" aria-label="Open Design Studio settings panel" title="Customize Design">
       <svg viewBox="0 0 24 24">
@@ -191,7 +198,8 @@
 
     <!-- Shareable Card Download Option -->
     <div style="border-top: 1px dashed var(--card-border); padding-top: 1.5rem; margin-top: 0.5rem;">
-      <h3 class="admin-section-title">Shareable Card</h3>
+      <h3 class="admin-section-title">Invite & Share</h3>
+      <button id="admin-share-btn" class="submit-btn" style="width: 100%; margin-top: 0; margin-bottom: 0.5rem; background: var(--accent-color);">Send / Text Website Link</button>
       <button id="download-img-btn" class="submit-btn" style="width: 100%; margin-top: 0; background: var(--accent-color);">Download PNG for Text/Socials</button>
     </div>
 
@@ -216,6 +224,41 @@
       <button id="export-csv-btn" class="submit-btn" style="width: 100%; margin-top: 0;">Export RSVPs to CSV</button>
     </div>
   </aside>
+
+  <!-- Share Invitation Dialog Modal -->
+  <dialog id="share-modal" class="share-dialog">
+    <div class="share-dialog-content">
+      <div class="share-dialog-header">
+        <h2 class="share-dialog-title">Share Invitation</h2>
+        <button class="close-btn" id="close-share-btn" aria-label="Close Share modal">&times;</button>
+      </div>
+      <p class="share-dialog-desc">Share our interactive digital invitation with your friends and family!</p>
+      
+      <div class="share-options-grid">
+        <button id="share-sms-btn" class="share-opt-btn">
+          <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z"/></svg>
+          Text (SMS)
+        </button>
+        <button id="share-email-btn" class="share-opt-btn">
+          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          Email
+        </button>
+        <button id="share-copy-btn" class="share-opt-btn">
+          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          Copy Link
+        </button>
+        <button id="share-download-btn" class="share-opt-btn">
+          <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+          Download PNG
+        </button>
+      </div>
+
+      <div class="share-link-copy-container">
+        <input type="text" id="share-link-input" readonly value="">
+        <button id="share-link-copy-inline">Copy</button>
+      </div>
+    </div>
+  </dialog>
 
   <script src="script.js?v=2.0.3"></script>
 </body>

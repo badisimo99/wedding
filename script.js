@@ -301,6 +301,9 @@ function setupEventListeners() {
       reader.readAsDataURL(file);
     }
   });
+
+  // Setup Share Modal Dialog listeners
+  setupShareEventListeners();
 }
 
 // --- Live Countdown ---
@@ -1009,33 +1012,38 @@ function startScheduler() {
     // Helper to find and schedule notes for a line
     const scheduleLineNotes = (line, instrument) => {
       line.forEach(step => {
-        // Absolute beat time for this note relative to loop starts
-        const noteTime = currentLoopStartAudioTime + step.beat * beatDuration;
+        // We check two potential loop iterations for scheduling:
+        // 1. The current loop iteration:
+        const t1 = currentLoopStartAudioTime + step.beat * beatDuration;
+        // 2. The next loop iteration (in case we are near the boundary and scheduling ahead):
+        const t2 = currentLoopStartAudioTime + loopLengthTime + step.beat * beatDuration;
 
-        // Schedule only if the note time is within our lookahead window
-        if (noteTime >= now && noteTime < lookaheadTime) {
-          // Check if this note was already scheduled for this specific loop iteration
-          if (!step.scheduledTimes) step.scheduledTimes = [];
-          if (step.scheduledTimes.some(t => Math.abs(t - noteTime) < 0.01)) {
-            return; // already scheduled
-          }
+        [t1, t2].forEach(noteTime => {
+          // Schedule only if the note time is within our lookahead window
+          if (noteTime >= now && noteTime < lookaheadTime) {
+            // Check if this note was already scheduled for this specific loop iteration
+            if (!step.scheduledTimes) step.scheduledTimes = [];
+            if (step.scheduledTimes.some(t => Math.abs(t - noteTime) < 0.01)) {
+              return; // already scheduled
+            }
 
-          step.scheduledTimes.push(noteTime);
+            step.scheduledTimes.push(noteTime);
 
-          // Humanize timing (±6ms) and pitch (±1.5 cents)
-          const timeOffset = (Math.random() - 0.5) * 0.012;
-          const pitchOffset = 1 + (Math.random() - 0.5) * 0.0015;
-          const finalNoteTime = noteTime + timeOffset;
-          const freq = NOTE_FREQS[step.note] * pitchOffset;
-          const duration = step.duration * beatDuration;
+            // Humanize timing (±6ms) and pitch (±1.5 cents)
+            const timeOffset = (Math.random() - 0.5) * 0.012;
+            const pitchOffset = 1 + (Math.random() - 0.5) * 0.0015;
+            const finalNoteTime = noteTime + timeOffset;
+            const freq = NOTE_FREQS[step.note] * pitchOffset;
+            const duration = step.duration * beatDuration;
 
-          if (freq) {
-            const nodes = triggerStringNoteScheduled(freq, finalNoteTime, duration, instrument);
-            if (nodes) {
-              scheduledNodes.push(...nodes);
+            if (freq) {
+              const nodes = triggerStringNoteScheduled(freq, finalNoteTime, duration, instrument);
+              if (nodes) {
+                scheduledNodes.push(...nodes);
+              }
             }
           }
-        }
+        });
       });
     };
 
@@ -1062,8 +1070,9 @@ function startScheduler() {
       return node.stopTime && node.stopTime > now;
     });
 
-    // Advance the loop start time pointer once we cross into the second half of the current loop
-    if (now + 2.0 > currentLoopStartAudioTime + loopLengthTime) {
+    // Advance the loop start time pointer once we cross the boundary of the current loop
+    // A while loop is used to robustly catch up if the tab was suspended/backgrounded
+    while (now >= currentLoopStartAudioTime + loopLengthTime) {
       currentLoopStartAudioTime += loopLengthTime;
     }
   }
@@ -1559,4 +1568,123 @@ function drawLeaf(c, sx, sy, ex, ey, size) {
   c.quadraticCurveTo((sx + ex)/2 + size, (sy + ey)/2 - size, ex, ey);
   c.quadraticCurveTo((sx + ex)/2 - size, (sy + ey)/2 + size, sx, sy);
   c.fill();
+}
+
+// --- Share Modal Dialog Event Listeners & Actions ---
+function setupShareEventListeners() {
+  const shareModal = document.getElementById("share-modal");
+  const shareBtn = document.getElementById("share-btn");
+  const adminShareBtn = document.getElementById("admin-share-btn");
+  const closeShareBtn = document.getElementById("close-share-btn");
+  const shareLinkInput = document.getElementById("share-link-input");
+
+  function getCleanShareUrl() {
+    // Return clean URL without query parameters like ?edit=true or ?admin=true
+    return window.location.href.split('?')[0];
+  }
+
+  function openShareModal() {
+    if (!shareModal) return;
+    shareLinkInput.value = getCleanShareUrl();
+    shareModal.showModal();
+    // Trigger CSS opacity and scale animations via simple flow repaint/class
+    setTimeout(() => {
+      shareModal.classList.add("open");
+    }, 10);
+  }
+
+  function closeShareModal() {
+    if (!shareModal) return;
+    shareModal.classList.remove("open");
+    // Wait for the transition duration to finish before closing natively
+    setTimeout(() => {
+      shareModal.close();
+    }, 300);
+  }
+
+  if (shareBtn) shareBtn.addEventListener("click", openShareModal);
+  if (adminShareBtn) adminShareBtn.addEventListener("click", openShareModal);
+  if (closeShareBtn) closeShareBtn.addEventListener("click", closeShareModal);
+
+  // Close when clicking dialog backdrop
+  if (shareModal) {
+    shareModal.addEventListener("click", (e) => {
+      const rect = shareModal.getBoundingClientRect();
+      const isInDialog = (
+        rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
+        rect.left <= e.clientX && e.clientX <= rect.left + rect.width
+      );
+      if (!isInDialog) {
+        closeShareModal();
+      }
+    });
+  }
+
+  // Share via native SMS (mobile-friendly)
+  const smsBtn = document.getElementById("share-sms-btn");
+  if (smsBtn) {
+    smsBtn.addEventListener("click", () => {
+      const shareUrl = getCleanShareUrl();
+      const textMessage = `Sofia & Russell's Wedding Save the Date! 📅 October 8, 2026. View details, hear our wedding music, and RSVP at: ${shareUrl}`;
+      window.open(`sms:?&body=${encodeURIComponent(textMessage)}`, "_blank");
+    });
+  }
+
+  // Share via native Email
+  const emailBtn = document.getElementById("share-email-btn");
+  if (emailBtn) {
+    emailBtn.addEventListener("click", () => {
+      const shareUrl = getCleanShareUrl();
+      const subject = "Save the Date: Sofia & Russell's Wedding! 💌";
+      const bodyMessage = `Hi! We are so excited to invite you to our wedding celebration! Click the link below to view our save-the-date card, countdown, and RSVP:\n\n${shareUrl}`;
+      window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyMessage)}`, "_blank");
+    });
+  }
+
+  // Copy Link (modal grid button and inline copy button)
+  function copyLinkText(buttonEl) {
+    const shareUrl = getCleanShareUrl();
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      const originalText = buttonEl.innerHTML;
+      buttonEl.innerHTML = "Copied! 📋";
+      buttonEl.style.background = "#10b981"; // Success Green HSL background
+      buttonEl.style.borderColor = "#10b981";
+      buttonEl.style.color = "#ffffff";
+      
+      setTimeout(() => {
+        buttonEl.innerHTML = originalText;
+        buttonEl.style.background = "";
+        buttonEl.style.borderColor = "";
+        buttonEl.style.color = "";
+      }, 2000);
+    }).catch(err => {
+      console.error("Failed to copy link: ", err);
+      // Fallback copy logic for older devices
+      shareLinkInput.select();
+      document.execCommand("copy");
+      buttonEl.innerHTML = "Copied! 📋";
+      setTimeout(() => {
+        buttonEl.innerHTML = originalText;
+      }, 2000);
+    });
+  }
+
+  const copyBtn = document.getElementById("share-copy-btn");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", () => copyLinkText(copyBtn));
+  }
+
+  const copyInlineBtn = document.getElementById("share-link-copy-inline");
+  if (copyInlineBtn) {
+    copyInlineBtn.addEventListener("click", () => copyLinkText(copyInlineBtn));
+  }
+
+  // Download PNG option
+  const downloadBtn = document.getElementById("share-download-btn");
+  if (downloadBtn) {
+    downloadBtn.addEventListener("click", () => {
+      closeShareModal();
+      downloadCardImage();
+    });
+  }
 }

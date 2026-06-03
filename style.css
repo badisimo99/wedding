@@ -646,3 +646,166 @@ main {
 #edit-btn {
   display: none;
 }
+
+/* --- Share Invitation Dialog Modal & Styles --- */
+.share-dialog {
+  border: 1px solid var(--card-border);
+  border-radius: 1.5rem;
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  width: 90%;
+  max-width: 440px;
+  padding: 2rem;
+  box-shadow: 0 24px 64px var(--shadow-color);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.95);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: block; /* Required to allow transitions before showModal overrides it */
+  pointer-events: none;
+}
+
+.share-dialog[open] {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+}
+
+.share-dialog::backdrop {
+  background: var(--overlay-bg);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.share-dialog[open]::backdrop {
+  opacity: 1;
+}
+
+.share-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.share-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 0.75rem;
+}
+
+.share-dialog-title {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+.share-dialog-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: 0.25rem;
+}
+
+/* Grid layout for major sharing options */
+.share-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.share-opt-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.1rem 0.5rem;
+  border-radius: 0.75rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  gap: 0.6rem;
+  box-shadow: 0 4px 10px var(--shadow-color);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.share-opt-btn svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: var(--accent-color);
+  transition: transform 0.3s ease;
+}
+
+.share-opt-btn:hover {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 12px var(--glow-color);
+  transform: translateY(-2px);
+}
+
+.share-opt-btn:hover svg {
+  transform: scale(1.1);
+}
+
+.share-opt-btn:active {
+  transform: translateY(0);
+}
+
+/* Copy Link text input area */
+.share-link-copy-container {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  padding: 0.35rem;
+  align-items: center;
+}
+
+#share-link-input {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  padding: 0.4rem;
+  flex: 1;
+  width: 100%;
+  outline: none;
+  text-overflow: ellipsis;
+}
+
+#share-link-copy-inline {
+  background: var(--accent-color);
+  color: var(--bg-primary);
+  border: none;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#share-link-copy-inline:hover {
+  background: var(--accent-hover);
+}
+
+/* Quick Share inside Design Studio Panel (drawer) */
+.admin-share-section {
+  border-top: 1px dashed var(--card-border);
+  padding-top: 1.5rem;
+  margin-top: 0.5rem;
+}
+
