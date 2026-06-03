@@ -72,6 +72,36 @@
   }
 })();
 
+// --- Safe LocalStorage Wrapper (Prevents DOMException crashes in Private Browsing / embedded webviews) ---
+const safeStorage = {
+  getItem(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.warn("localStorage.getItem failed for key:", key, e);
+      return null;
+    }
+  },
+  setItem(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      console.warn("localStorage.setItem failed for key:", key, e);
+      return false;
+    }
+  },
+  removeItem(key) {
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch (e) {
+      console.warn("localStorage.removeItem failed for key:", key, e);
+      return false;
+    }
+  }
+};
+
 // --- State Management ---
 const DEFAULT_CONFIG = {
   names: "Sofia & Russell",
@@ -132,7 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   const isEditorParam = urlParams.has("edit") || urlParams.has("admin");
   if (isEditorParam) {
-    localStorage.setItem("wedding_is_editor", "true");
+    safeStorage.setItem("wedding_is_editor", "true");
   }
 
   const isLocalhost = window.location.hostname === "localhost" || 
@@ -140,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
                       window.location.protocol === "file:";
 
   if (isLocalhost) {
-    const isEditor = isEditorParam || localStorage.getItem("wedding_is_editor") === "true";
+    const isEditor = isEditorParam || safeStorage.getItem("wedding_is_editor") === "true";
     if (isEditor) {
       if (editBtn) editBtn.style.display = "flex";
       if (shareBtn) shareBtn.style.display = "flex";
@@ -161,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // --- Configuration Persistence ---
 function loadConfig() {
-  const saved = localStorage.getItem("wedding_save_the_date_config");
+  const saved = safeStorage.getItem("wedding_save_the_date_config");
   if (saved) {
     try {
       config = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
@@ -225,7 +255,7 @@ function loadConfig() {
 }
 
 function saveConfig() {
-  localStorage.setItem("wedding_save_the_date_config", JSON.stringify(config));
+  safeStorage.setItem("wedding_save_the_date_config", JSON.stringify(config));
 }
 
 function formatNames(nameStr) {
@@ -366,7 +396,7 @@ function setupEventListeners() {
     };
 
     rsvps.push(rsvpObj);
-    localStorage.setItem("wedding_rsvps", JSON.stringify(rsvps));
+    safeStorage.setItem("wedding_rsvps", JSON.stringify(rsvps));
     renderRSVPTable();
 
     // Send to Google Sheets if Webhook is defined
@@ -410,7 +440,7 @@ function setupEventListeners() {
   const lockEditorBtn = document.getElementById("lock-editor-btn");
   if (lockEditorBtn) {
     lockEditorBtn.addEventListener("click", () => {
-      localStorage.removeItem("wedding_is_editor");
+      safeStorage.removeItem("wedding_is_editor");
       // Redirect to clean URL without parameters so editor is locked/hidden
       window.location.href = window.location.href.split('?')[0];
     });
@@ -461,7 +491,7 @@ function startCountdown() {
 
 // --- RSVP Table & Local Database Logic ---
 function loadRSVPs() {
-  const saved = localStorage.getItem("wedding_rsvps");
+  const saved = safeStorage.getItem("wedding_rsvps");
   if (saved) {
     try {
       rsvps = JSON.parse(saved);
