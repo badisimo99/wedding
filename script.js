@@ -47,30 +47,37 @@ document.addEventListener("DOMContentLoaded", () => {
   startCountdown();
   renderRSVPTable();
 
-  // Show edit cog and share button if ?edit=true or ?admin=true is in URL query parameters, or if previously unlocked, or from editor's IP address
+  // Show edit cog and share button ONLY if the visitor is accessing from localhost/127.0.0.1 (development)
+  // or if their public IP strictly matches your editor IP address (198.181.63.200).
+  const editBtn = document.getElementById("edit-btn");
+  const shareBtn = document.getElementById("share-btn");
+  
+  if (editBtn) editBtn.style.display = "none";
+  if (shareBtn) shareBtn.style.display = "none";
+
   const urlParams = new URLSearchParams(window.location.search);
   const isEditorParam = urlParams.has("edit") || urlParams.has("admin");
-  
   if (isEditorParam) {
     localStorage.setItem("wedding_is_editor", "true");
   }
 
-  const isEditor = isEditorParam || localStorage.getItem("wedding_is_editor") === "true";
+  const isLocalhost = window.location.hostname === "localhost" || 
+                      window.location.hostname === "127.0.0.1" || 
+                      window.location.protocol === "file:";
 
-  if (isEditor) {
-    const editBtn = document.getElementById("edit-btn");
-    if (editBtn) editBtn.style.display = "flex";
-    const shareBtn = document.getElementById("share-btn");
-    if (shareBtn) shareBtn.style.display = "flex";
+  if (isLocalhost) {
+    const isEditor = isEditorParam || localStorage.getItem("wedding_is_editor") === "true";
+    if (isEditor) {
+      if (editBtn) editBtn.style.display = "flex";
+      if (shareBtn) shareBtn.style.display = "flex";
+    }
   } else {
-    // Check if the visitor's public IP matches your current IP address (198.181.63.200)
+    // Production: Strictly require the IP check to pass, preventing bypass via URL params or localStorage on other IPs
     fetch("https://api.ipify.org?format=json")
       .then(res => res.json())
       .then(data => {
         if (data.ip === "198.181.63.200") {
-          const editBtn = document.getElementById("edit-btn");
           if (editBtn) editBtn.style.display = "flex";
-          const shareBtn = document.getElementById("share-btn");
           if (shareBtn) shareBtn.style.display = "flex";
         }
       })
@@ -607,6 +614,25 @@ function initAudioContext() {
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AudioContextClass();
+
+    // Track state change to keep UI in sync if the OS suspends or interrupts the context
+    audioCtx.addEventListener("statechange", () => {
+      if (audioCtx && (audioCtx.state === "suspended" || audioCtx.state === "interrupted")) {
+        if (isAudioPlaying) {
+          isAudioPlaying = false;
+          const audioBtn = document.getElementById("audio-btn");
+          if (audioBtn) audioBtn.classList.remove("active");
+          if (schedulerInterval) {
+            clearInterval(schedulerInterval);
+            schedulerInterval = null;
+          }
+          scheduledNodes.forEach(node => {
+            try { node.stop(); } catch (e) {}
+          });
+          scheduledNodes = [];
+        }
+      }
+    });
     
     // iOS Web Audio API Unlocker (play a tiny silent buffer)
     const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
@@ -616,7 +642,7 @@ function initAudioContext() {
     if (silentSource.start) silentSource.start(0);
     
     masterGain = audioCtx.createGain();
-    masterGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+    masterGain.gain.value = 0.35;
     masterGain.connect(audioCtx.destination);
 
     // 1. Setup Procedural Cathedral Convolution Reverb Send Effect
@@ -627,10 +653,10 @@ function initAudioContext() {
     }
 
     preDelayNode = audioCtx.createDelay(0.5);
-    preDelayNode.delayTime.setValueAtTime(0.050, audioCtx.currentTime); // 50ms pre-delay
+    preDelayNode.delayTime.value = 0.050; // 50ms pre-delay
 
     reverbGain = audioCtx.createGain();
-    reverbGain.gain.setValueAtTime(0.32, audioCtx.currentTime); // 32% wet mix
+    reverbGain.gain.value = 0.32; // 32% wet mix
 
     // Connect convolution reverb chain
     preDelayNode.connect(convolverNode);
@@ -641,14 +667,14 @@ function initAudioContext() {
     delayNodeL = audioCtx.createDelay(1.0);
     delayNodeR = audioCtx.createDelay(1.0);
     
-    delayNodeL.delayTime.setValueAtTime(0.35, audioCtx.currentTime);
-    delayNodeR.delayTime.setValueAtTime(0.50, audioCtx.currentTime);
+    delayNodeL.delayTime.value = 0.35;
+    delayNodeR.delayTime.value = 0.50;
     
     feedbackGainL = audioCtx.createGain();
     feedbackGainR = audioCtx.createGain();
     
-    feedbackGainL.gain.setValueAtTime(0.40, audioCtx.currentTime);
-    feedbackGainR.gain.setValueAtTime(0.40, audioCtx.currentTime);
+    feedbackGainL.gain.value = 0.40;
+    feedbackGainR.gain.value = 0.40;
     
     delayNodeL.connect(feedbackGainL);
     feedbackGainL.connect(delayNodeR);
@@ -660,11 +686,11 @@ function initAudioContext() {
     const panDelayR = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
     
     const delayDryWet = audioCtx.createGain();
-    delayDryWet.gain.setValueAtTime(0.06, audioCtx.currentTime); // Subtle 6% wet ping-pong echo
+    delayDryWet.gain.value = 0.06; // Subtle 6% wet ping-pong echo
 
     if (panDelayL && panDelayR) {
-      panDelayL.pan.setValueAtTime(-0.8, audioCtx.currentTime);
-      panDelayR.pan.setValueAtTime(0.8, audioCtx.currentTime);
+      panDelayL.pan.value = -0.8;
+      panDelayR.pan.value = 0.8;
       
       delayNodeL.connect(panDelayL);
       panDelayL.connect(delayDryWet);
@@ -682,33 +708,33 @@ function initAudioContext() {
     // Violin Channel strip (L/R): Lowpass -> Highshelf EQ -> Lowshelf EQ -> Output
     violinFilterL = audioCtx.createBiquadFilter();
     violinFilterL.type = "lowpass";
-    violinFilterL.frequency.setValueAtTime(1400, audioCtx.currentTime);
-    violinFilterL.Q.setValueAtTime(1.0, audioCtx.currentTime);
+    violinFilterL.frequency.value = 1400;
+    violinFilterL.Q.value = 1.0;
 
     violinFilterR = audioCtx.createBiquadFilter();
     violinFilterR.type = "lowpass";
-    violinFilterR.frequency.setValueAtTime(1400, audioCtx.currentTime);
-    violinFilterR.Q.setValueAtTime(1.0, audioCtx.currentTime);
+    violinFilterR.frequency.value = 1400;
+    violinFilterR.Q.value = 1.0;
 
     const violinHighL = audioCtx.createBiquadFilter();
     violinHighL.type = "highshelf";
-    violinHighL.frequency.setValueAtTime(6000, audioCtx.currentTime);
-    violinHighL.gain.setValueAtTime(3.5, audioCtx.currentTime);
+    violinHighL.frequency.value = 6000;
+    violinHighL.gain.value = 3.5;
 
     const violinHighR = audioCtx.createBiquadFilter();
     violinHighR.type = "highshelf";
-    violinHighR.frequency.setValueAtTime(6000, audioCtx.currentTime);
-    violinHighR.gain.setValueAtTime(3.5, audioCtx.currentTime);
+    violinHighR.frequency.value = 6000;
+    violinHighR.gain.value = 3.5;
 
     const violinLowL = audioCtx.createBiquadFilter();
     violinLowL.type = "lowshelf";
-    violinLowL.frequency.setValueAtTime(200, audioCtx.currentTime);
-    violinLowL.gain.setValueAtTime(-4.0, audioCtx.currentTime);
+    violinLowL.frequency.value = 200;
+    violinLowL.gain.value = -4.0;
 
     const violinLowR = audioCtx.createBiquadFilter();
     violinLowR.type = "lowshelf";
-    violinLowR.frequency.setValueAtTime(200, audioCtx.currentTime);
-    violinLowR.gain.setValueAtTime(-4.0, audioCtx.currentTime);
+    violinLowR.frequency.value = 200;
+    violinLowR.gain.value = -4.0;
 
     violinFilterL.connect(violinHighL);
     violinHighL.connect(violinLowL);
@@ -723,25 +749,25 @@ function initAudioContext() {
     // Viola Channel strip (L/R): Lowpass -> Mid Warmth EQ -> Output
     violaFilterL = audioCtx.createBiquadFilter();
     violaFilterL.type = "lowpass";
-    violaFilterL.frequency.setValueAtTime(950, audioCtx.currentTime);
-    violaFilterL.Q.setValueAtTime(1.0, audioCtx.currentTime);
+    violaFilterL.frequency.value = 950;
+    violaFilterL.Q.value = 1.0;
 
     violaFilterR = audioCtx.createBiquadFilter();
     violaFilterR.type = "lowpass";
-    violaFilterR.frequency.setValueAtTime(950, audioCtx.currentTime);
-    violaFilterR.Q.setValueAtTime(1.0, audioCtx.currentTime);
+    violaFilterR.frequency.value = 950;
+    violaFilterR.Q.value = 1.0;
 
     const violaPeakL = audioCtx.createBiquadFilter();
     violaPeakL.type = "peaking";
-    violaPeakL.frequency.setValueAtTime(250, audioCtx.currentTime);
-    violaPeakL.Q.setValueAtTime(1.0, audioCtx.currentTime);
-    violaPeakL.gain.setValueAtTime(2.5, audioCtx.currentTime);
+    violaPeakL.frequency.value = 250;
+    violaPeakL.Q.value = 1.0;
+    violaPeakL.gain.value = 2.5;
 
     const violaPeakR = audioCtx.createBiquadFilter();
     violaPeakR.type = "peaking";
-    violaPeakR.frequency.setValueAtTime(250, audioCtx.currentTime);
-    violaPeakR.Q.setValueAtTime(1.0, audioCtx.currentTime);
-    violaPeakR.gain.setValueAtTime(2.5, audioCtx.currentTime);
+    violaPeakR.frequency.value = 250;
+    violaPeakR.Q.value = 1.0;
+    violaPeakR.gain.value = 2.5;
 
     violaFilterL.connect(violaPeakL);
     violaPeakL.connect(masterGain);
@@ -754,35 +780,35 @@ function initAudioContext() {
     // Cello Channel strip (L/R): Lowpass -> Bass Boost EQ -> Highshelf EQ -> Output
     celloFilterL = audioCtx.createBiquadFilter();
     celloFilterL.type = "lowpass";
-    celloFilterL.frequency.setValueAtTime(650, audioCtx.currentTime);
-    celloFilterL.Q.setValueAtTime(1.0, audioCtx.currentTime);
+    celloFilterL.frequency.value = 650;
+    celloFilterL.Q.value = 1.0;
 
     celloFilterR = audioCtx.createBiquadFilter();
     celloFilterR.type = "lowpass";
-    celloFilterR.frequency.setValueAtTime(650, audioCtx.currentTime);
-    celloFilterR.Q.setValueAtTime(1.0, audioCtx.currentTime);
+    celloFilterR.frequency.value = 650;
+    celloFilterR.Q.value = 1.0;
 
     const celloPeakL = audioCtx.createBiquadFilter();
     celloPeakL.type = "peaking";
-    celloPeakL.frequency.setValueAtTime(90, audioCtx.currentTime);
-    celloPeakL.Q.setValueAtTime(1.2, audioCtx.currentTime);
-    celloPeakL.gain.setValueAtTime(4.5, audioCtx.currentTime);
+    celloPeakL.frequency.value = 90;
+    celloPeakL.Q.value = 1.2;
+    celloPeakL.gain.value = 4.5;
 
     const celloPeakR = audioCtx.createBiquadFilter();
     celloPeakR.type = "peaking";
-    celloPeakR.frequency.setValueAtTime(90, audioCtx.currentTime);
-    celloPeakR.Q.setValueAtTime(1.2, audioCtx.currentTime);
-    celloPeakR.gain.setValueAtTime(4.5, audioCtx.currentTime);
+    celloPeakR.frequency.value = 90;
+    celloPeakR.Q.value = 1.2;
+    celloPeakR.gain.value = 4.5;
 
     const celloHighL = audioCtx.createBiquadFilter();
     celloHighL.type = "highshelf";
-    celloHighL.frequency.setValueAtTime(4000, audioCtx.currentTime);
-    celloHighL.gain.setValueAtTime(-3.0, audioCtx.currentTime);
+    celloHighL.frequency.value = 4000;
+    celloHighL.gain.value = -3.0;
 
     const celloHighR = audioCtx.createBiquadFilter();
     celloHighR.type = "highshelf";
-    celloHighR.frequency.setValueAtTime(4000, audioCtx.currentTime);
-    celloHighR.gain.setValueAtTime(-3.0, audioCtx.currentTime);
+    celloHighR.frequency.value = 4000;
+    celloHighR.gain.value = -3.0;
 
     celloFilterL.connect(celloPeakL);
     celloPeakL.connect(celloHighL);
@@ -797,10 +823,10 @@ function initAudioContext() {
     // 4. Setup Global Bowing Pressure Modulation LFO
     globalBowingLFO = audioCtx.createOscillator();
     globalBowingLFO.type = "sine";
-    globalBowingLFO.frequency.setValueAtTime(0.28, audioCtx.currentTime); // 0.28Hz slow breathing
+    globalBowingLFO.frequency.value = 0.28; // 0.28Hz slow breathing
 
     globalBowingGain = audioCtx.createGain();
-    globalBowingGain.gain.setValueAtTime(110, audioCtx.currentTime); // Modulate cutoffs ±110Hz
+    globalBowingGain.gain.value = 110; // Modulate cutoffs ±110Hz
 
     globalBowingLFO.connect(globalBowingGain);
     
@@ -823,9 +849,9 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
 
   const oscillators = [];
 
-  // Detuning factors and gains for 5 chorus-detuned voice oscillators
-  const detunes = [1.0, 0.995, 1.005, 1.997, 2.003];
-  const relativeGains = [0.20, 0.14, 0.14, 0.08, 0.08];
+  // Detuning factors and gains for 3 chorus-detuned voice oscillators to optimize mobile Safari performance
+  const detunes = [1.0, 0.996, 1.004];
+  const relativeGains = [0.26, 0.18, 0.18];
 
   // Set instrument-specific parameters
   let attackTime = 0.22;
@@ -984,6 +1010,8 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
     noiseGain.connect(gainR);
 
     noiseNode.start(startTime);
+    noiseNode.stop(startTime + 0.08);
+    noiseNode.stopTime = startTime + 0.08;
     oscillators.push(noiseNode);
   } catch (err) {
     console.error("Failed to synthesize bow scrape noise transient:", err);
@@ -1178,13 +1206,17 @@ function toggleAudio() {
       console.log("Silent switch bypass omitted:", err);
     }
 
+    if (audioCtx && audioCtx.state === "closed") {
+      audioCtx = null;
+    }
+
     if (!audioCtx) {
       initAudioContext();
     }
     
     scheduledNodes = [];
     
-    if (audioCtx && audioCtx.state === "suspended") {
+    if (audioCtx && audioCtx.state !== "running") {
       audioCtx.resume().then(() => {
         startScheduler();
       }).catch(err => {
