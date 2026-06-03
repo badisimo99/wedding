@@ -47,9 +47,17 @@ document.addEventListener("DOMContentLoaded", () => {
   startCountdown();
   renderRSVPTable();
 
-  // Show edit cog and share button if ?edit=true or ?admin=true is in URL query parameters
+  // Show edit cog and share button if ?edit=true or ?admin=true is in URL query parameters, or if previously unlocked
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.has("edit") || urlParams.has("admin")) {
+  const isEditorParam = urlParams.has("edit") || urlParams.has("admin");
+  
+  if (isEditorParam) {
+    localStorage.setItem("wedding_is_editor", "true");
+  }
+
+  const isEditor = isEditorParam || localStorage.getItem("wedding_is_editor") === "true";
+
+  if (isEditor) {
     const editBtn = document.getElementById("edit-btn");
     if (editBtn) editBtn.style.display = "flex";
     const shareBtn = document.getElementById("share-btn");
@@ -303,6 +311,16 @@ function setupEventListeners() {
       reader.readAsDataURL(file);
     }
   });
+
+  // Lock Editor (Switch to Guest View)
+  const lockEditorBtn = document.getElementById("lock-editor-btn");
+  if (lockEditorBtn) {
+    lockEditorBtn.addEventListener("click", () => {
+      localStorage.removeItem("wedding_is_editor");
+      // Redirect to clean URL without parameters so editor is locked/hidden
+      window.location.href = window.location.href.split('?')[0];
+    });
+  }
 
   // Setup Share Modal Dialog listeners
   setupShareEventListeners();
