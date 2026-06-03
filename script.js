@@ -387,75 +387,88 @@ function exportRSVPsCSV() {
 // Chime Melody System (Web Audio API)
 const NOTE_FREQS = {
   "A3": 220.00,
+  "Bb3": 233.08,
+  "A#3": 233.08,
   "B3": 246.94,
+  "C4": 261.63,
   "C#4": 277.18,
   "D4": 293.66,
   "D#4": 311.13,
+  "Eb4": 311.13,
   "E4": 329.63,
+  "F4": 349.23,
   "F#4": 369.99,
   "G4": 392.00,
+  "G#4": 415.30,
   "A4": 440.00,
+  "Bb4": 466.16,
+  "A#4": 466.16,
   "B4": 493.88,
+  "C5": 523.25,
   "C#5": 554.37,
   "D5": 587.33,
-  "E5": 659.25
+  "D#5": 622.25,
+  "Eb5": 622.25,
+  "E5": 659.25,
+  "F5": 698.46
 };
 
 const MELODY = [
-  // Line 1: Goin' to the chapel and we're gonna get married
-  { note: "D4",  beat: 0.0, duration: 0.4 },
-  { note: "F#4", beat: 0.5, duration: 0.4 },
-  { note: "A4",  beat: 1.0, duration: 0.4 },
-  { note: "D5",  beat: 1.5, duration: 0.4 },
-  { note: "B4",  beat: 2.0, duration: 0.4 },
-  { note: "A4",  beat: 2.5, duration: 0.8 },
-  { note: "A4",  beat: 3.5, duration: 0.4 },
-  { note: "D5",  beat: 4.0, duration: 0.4 },
-  { note: "B4",  beat: 4.5, duration: 0.4 },
-  { note: "A4",  beat: 5.0, duration: 0.4 },
-  { note: "F#4", beat: 5.5, duration: 0.4 },
-  { note: "E4",  beat: 6.0, duration: 0.4 },
-  { note: "D4",  beat: 6.5, duration: 1.2 },
+  // Measure 1
+  { note: "F4",  beat: 0.0, duration: 0.9 },
+  { note: "Bb4", beat: 1.0, duration: 0.65 },
+  { note: "Bb4", beat: 1.75, duration: 0.2 },
+  // Measure 2
+  { note: "Bb4", beat: 2.0, duration: 1.4 },
+  // Measure 3
+  { note: "F4",  beat: 4.0, duration: 0.9 },
+  { note: "C5",  beat: 5.0, duration: 0.65 },
+  { note: "A4",  beat: 5.75, duration: 0.2 },
+  // Measure 4
+  { note: "Bb4", beat: 6.0, duration: 1.4 },
 
-  // Line 2: Goin' to the chapel and we're gonna get married
-  { note: "E4",  beat: 8.0, duration: 0.4 },
-  { note: "G4",  beat: 8.5, duration: 0.4 },
-  { note: "B4",  beat: 9.0, duration: 0.4 },
-  { note: "E5",  beat: 9.5, duration: 0.4 },
-  { note: "C#5", beat: 10.0, duration: 0.4 },
-  { note: "B4",  beat: 10.5, duration: 0.8 },
-  { note: "B4",  beat: 11.5, duration: 0.4 },
-  { note: "E5",  beat: 12.0, duration: 0.4 },
-  { note: "C#5", beat: 12.5, duration: 0.4 },
-  { note: "B4",  beat: 13.0, duration: 0.4 },
-  { note: "G4",  beat: 13.5, duration: 0.4 },
-  { note: "F#4", beat: 14.0, duration: 0.4 },
-  { note: "E4",  beat: 14.5, duration: 1.2 },
+  // Measure 5
+  { note: "F4",  beat: 8.0, duration: 0.9 },
+  { note: "Bb4", beat: 9.0, duration: 0.65 },
+  { note: "Eb5", beat: 9.75, duration: 0.2 },
+  // Measure 6
+  { note: "Eb5", beat: 10.0, duration: 0.9 },
+  { note: "D5",  beat: 11.0, duration: 0.4 },
+  { note: "C5",  beat: 11.75, duration: 0.2 },
+  // Measure 7
+  { note: "Bb4", beat: 12.0, duration: 0.9 },
+  { note: "A4",  beat: 13.0, duration: 0.65 },
+  { note: "Bb4", beat: 13.75, duration: 0.2 },
+  // Measure 8
+  { note: "C5",  beat: 14.0, duration: 1.4 },
 
-  // Line 3: Gee, I really love you and we're gonna get married
-  { note: "D5",  beat: 16.0, duration: 0.4 },
-  { note: "D5",  beat: 16.5, duration: 0.4 },
-  { note: "B4",  beat: 17.0, duration: 0.4 },
-  { note: "D5",  beat: 17.5, duration: 0.4 },
-  { note: "B4",  beat: 18.0, duration: 0.4 },
-  { note: "A4",  beat: 18.5, duration: 0.8 },
-  { note: "A4",  beat: 19.5, duration: 0.4 },
-  { note: "D5",  beat: 20.0, duration: 0.4 },
-  { note: "B4",  beat: 20.5, duration: 0.4 },
-  { note: "A4",  beat: 21.0, duration: 0.4 },
-  { note: "F#4", beat: 21.5, duration: 0.4 },
-  { note: "E4",  beat: 22.0, duration: 0.4 },
-  { note: "D4",  beat: 22.5, duration: 1.2 },
+  // Measure 9
+  { note: "F4",  beat: 16.0, duration: 0.9 },
+  { note: "Bb4", beat: 17.0, duration: 0.65 },
+  { note: "Bb4", beat: 17.75, duration: 0.2 },
+  // Measure 10
+  { note: "Bb4", beat: 18.0, duration: 1.4 },
+  // Measure 11
+  { note: "F4",  beat: 20.0, duration: 0.9 },
+  { note: "C5",  beat: 21.0, duration: 0.65 },
+  { note: "A4",  beat: 21.75, duration: 0.2 },
+  // Measure 12
+  { note: "Bb4", beat: 22.0, duration: 1.4 },
 
-  // Line 4: Goin' to the chapel of love
-  { note: "D4",  beat: 24.0, duration: 0.4 },
-  { note: "F#4", beat: 24.5, duration: 0.4 },
-  { note: "A4",  beat: 25.0, duration: 0.4 },
-  { note: "D5",  beat: 25.5, duration: 0.4 },
-  { note: "B4",  beat: 26.0, duration: 0.4 },
-  { note: "A4",  beat: 26.5, duration: 0.4 },
-  { note: "F#4", beat: 27.0, duration: 0.4 },
-  { note: "D4",  beat: 27.5, duration: 2.5 }
+  // Measure 13
+  { note: "F4",  beat: 24.0, duration: 0.9 },
+  { note: "Bb4", beat: 25.0, duration: 0.65 },
+  { note: "D5",  beat: 25.75, duration: 0.2 },
+  // Measure 14
+  { note: "F5",  beat: 26.0, duration: 0.9 },
+  { note: "D5",  beat: 27.0, duration: 0.65 },
+  { note: "Bb4", beat: 27.75, duration: 0.2 },
+  // Measure 15
+  { note: "G4",  beat: 28.0, duration: 0.9 },
+  { note: "C5",  beat: 29.0, duration: 0.65 },
+  { note: "D5",  beat: 29.75, duration: 0.2 },
+  // Measure 16
+  { note: "Bb4", beat: 30.0, duration: 1.4 }
 ];
 
 const LOOP_DURATION_BEATS = 32;
@@ -514,7 +527,7 @@ function triggerChimeNoteScheduled(freq, startTime, duration) {
 }
 
 function scheduleMelodyLoop(startTime) {
-  const tempo = 125; // Dixie Cups tempo
+  const tempo = 84; // Wagner tempo
   const beatDuration = 60 / tempo;
   
   MELODY.forEach(step => {
