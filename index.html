@@ -89,7 +89,7 @@
         <h3 class="rsvp-title">Join Our Mailing List</h3>
         <p class="rsvp-desc">Let us know if you can make it and get notified when formal invitations arrive!</p>
         
-        <form id="rsvp-form" class="rsvp-form" action="#" method="POST">
+        <form id="rsvp-form" class="rsvp-form" onsubmit="event.preventDefault();">
           <div class="form-group">
             <label for="guest-name" class="form-label">Full Name</label>
             <input type="text" id="guest-name" class="form-input" placeholder="e.g. Eleanor Vance" required autocomplete="name">

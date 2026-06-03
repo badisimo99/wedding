@@ -40,7 +40,7 @@ function loadConfig() {
   const saved = localStorage.getItem("wedding_save_the_date_config");
   if (saved) {
     try {
-      config = JSON.parse(saved);
+      config = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
       // Migrate old placeholder defaults automatically
       if (config.names === "Sophia & Julian" || config.names === "Sophia and Julian" || config.date === "2026-09-19T17:00:00") {
         config = { ...DEFAULT_CONFIG };
@@ -91,6 +91,7 @@ function saveConfig() {
 }
 
 function formatNames(nameStr) {
+  if (!nameStr) return "";
   // Format "A & B" or "A and B" to put the "&" on its own italicized line
   const parts = nameStr.split(/\s+&\s+|\s+and\s+/i);
   if (parts.length === 2) {
