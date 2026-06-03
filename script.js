@@ -384,8 +384,8 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 // Define global YouTube callback
 window.onYouTubeIframeAPIReady = function() {
   ytPlayer = new YT.Player('youtube-player', {
-    height: '1',
-    width: '1',
+    height: '200',
+    width: '300',
     videoId: 'F3S13y27d14',
     playerVars: {
       'playsinline': 1,
