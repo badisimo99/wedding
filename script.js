@@ -14,10 +14,10 @@ let rsvps = [];
 // Web Audio API Context and Synthesizer Nodes
 let audioCtx = null;
 let masterGain = null;
-let delayNode = null;
 let isAudioPlaying = false;
-let chimeTimer = null; // Reused as the melody sequence timeout
-let currentNoteIndex = 0;
+let loopTimer = null;
+let scheduledNodes = [];
+
 
 // Canvas Particles
 let canvas = null;
@@ -403,114 +403,100 @@ const NOTE_FREQS = {
 
 const MELODY = [
   // Line 1: Goin' to the chapel and we're gonna get married
-  { note: "F#4", beats: 1.0 },
-  { note: "D4", beats: 0.5 },
-  { note: "E4", beats: 0.5 },
-  { note: "D4", beats: 1.5 },
-  { note: "REST", beats: 0.5 },
-  { note: "A3", beats: 1.0 },
-  { note: "B3", beats: 0.5 },
-  { note: "C#4", beats: 0.5 },
-  { note: "F#4", beats: 1.5 },
-  { note: "REST", beats: 1.0 },
+  { note: "F#4", beat: 0.0, duration: 0.4 },
+  { note: "F#4", beat: 0.5, duration: 0.4 },
+  { note: "F#4", beat: 1.0, duration: 0.4 },
+  { note: "G4",  beat: 1.5, duration: 0.4 },
+  { note: "A4",  beat: 2.0, duration: 0.4 },
+  { note: "F#4", beat: 2.5, duration: 0.8 },
+  { note: "A4",  beat: 3.5, duration: 0.4 },
+  { note: "A4",  beat: 4.0, duration: 0.4 },
+  { note: "B4",  beat: 4.5, duration: 0.4 },
+  { note: "C#5", beat: 5.0, duration: 0.4 },
+  { note: "D5",  beat: 5.5, duration: 0.4 },
+  { note: "B4",  beat: 6.0, duration: 0.4 },
+  { note: "A4",  beat: 6.5, duration: 1.2 },
 
   // Line 2: Goin' to the chapel and we're gonna get married
-  { note: "D4", beats: 1.0 },
-  { note: "E4", beats: 0.5 },
-  { note: "D4", beats: 0.5 },
-  { note: "C#4", beats: 1.5 },
-  { note: "REST", beats: 0.5 },
-  { note: "D4", beats: 1.0 },
-  { note: "D#4", beats: 0.5 },
-  { note: "G4", beats: 0.5 },
-  { note: "G4", beats: 1.5 },
-  { note: "REST", beats: 1.0 },
+  { note: "G4",  beat: 8.0, duration: 0.4 },
+  { note: "G4",  beat: 8.5, duration: 0.4 },
+  { note: "G4",  beat: 9.0, duration: 0.4 },
+  { note: "A4",  beat: 9.5, duration: 0.4 },
+  { note: "B4",  beat: 10.0, duration: 0.4 },
+  { note: "G4",  beat: 10.5, duration: 0.8 },
+  { note: "B4",  beat: 11.5, duration: 0.4 },
+  { note: "B4",  beat: 12.0, duration: 0.4 },
+  { note: "C#5", beat: 12.5, duration: 0.4 },
+  { note: "D5",  beat: 13.0, duration: 0.4 },
+  { note: "E5",  beat: 13.5, duration: 0.4 },
+  { note: "C#5", beat: 14.0, duration: 0.4 },
+  { note: "A4",  beat: 14.5, duration: 1.2 },
 
   // Line 3: Gee, I really love you and we're gonna get married
-  { note: "E4", beats: 1.0 },
-  { note: "F#4", beats: 0.5 },
-  { note: "E4", beats: 0.5 },
-  { note: "B3", beats: 1.5 },
-  { note: "REST", beats: 0.5 },
-  { note: "G4", beats: 1.0 },
-  { note: "F#4", beats: 0.5 },
-  { note: "F#4", beats: 0.5 },
-  { note: "E4", beats: 1.5 },
-  { note: "F#4", beats: 1.5 },
-  { note: "REST", beats: 0.5 },
+  { note: "D5",  beat: 16.0, duration: 0.4 },
+  { note: "D5",  beat: 16.5, duration: 0.4 },
+  { note: "B4",  beat: 17.0, duration: 0.4 },
+  { note: "D5",  beat: 17.5, duration: 0.4 },
+  { note: "B4",  beat: 18.0, duration: 0.4 },
+  { note: "A4",  beat: 18.5, duration: 0.8 },
+  { note: "A4",  beat: 19.5, duration: 0.4 },
+  { note: "A4",  beat: 20.0, duration: 0.4 },
+  { note: "B4",  beat: 20.5, duration: 0.4 },
+  { note: "C#5", beat: 21.0, duration: 0.4 },
+  { note: "D5",  beat: 21.5, duration: 0.4 },
+  { note: "B4",  beat: 22.0, duration: 0.4 },
+  { note: "A4",  beat: 22.5, duration: 1.2 },
 
   // Line 4: Goin' to the chapel of love
-  { note: "F#4", beats: 1.0 },
-  { note: "E4", beats: 0.5 },
-  { note: "D4", beats: 0.5 },
-  { note: "F#4", beats: 1.5 },
-  { note: "REST", beats: 0.5 },
-  { note: "E4", beats: 1.0 },
-  { note: "F#4", beats: 0.5 },
-  { note: "E4", beats: 0.5 },
-  { note: "D4", beats: 2.0 },
-  { note: "REST", beats: 8.0 }
+  { note: "F#4", beat: 24.0, duration: 0.4 },
+  { note: "F#4", beat: 24.5, duration: 0.4 },
+  { note: "F#4", beat: 25.0, duration: 0.4 },
+  { note: "G4",  beat: 25.5, duration: 0.4 },
+  { note: "F#4", beat: 26.0, duration: 0.4 },
+  { note: "E4",  beat: 26.5, duration: 0.4 },
+  { note: "D4",  beat: 27.0, duration: 0.4 },
+  { note: "D4",  beat: 27.5, duration: 2.5 }
 ];
 
-const TEMPO = 135; // BPM
-const BEAT_DURATION = 60 / TEMPO;
+const LOOP_DURATION_BEATS = 32;
 
-function playMelodyStep() {
-  if (!isAudioPlaying) return;
-
-  const currentStep = MELODY[currentNoteIndex];
-  const noteName = currentStep.note;
-  const beats = currentStep.beats;
-  const durationSec = beats * BEAT_DURATION;
-
-  if (noteName !== "REST" && NOTE_FREQS[noteName]) {
-    triggerChimeNote(NOTE_FREQS[noteName]);
+function initAudioContext() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContextClass();
+    
+    masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+    masterGain.connect(audioCtx.destination);
+  } catch (err) {
+    console.error("Failed to initialize Web Audio API:", err);
   }
-
-  currentNoteIndex = (currentNoteIndex + 1) % MELODY.length;
-  
-  // Schedule next step
-  chimeTimer = setTimeout(playMelodyStep, durationSec * 1000);
 }
 
-function triggerChimeNote(freq) {
-  if (!audioCtx) {
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      audioCtx = new AudioContextClass();
-      
-      masterGain = audioCtx.createGain();
-      masterGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
-      masterGain.connect(audioCtx.destination);
-    } catch (err) {
-      console.error("Failed to initialize Web Audio API:", err);
-      return;
-    }
-  }
-
-  const now = audioCtx.currentTime;
+function triggerChimeNoteScheduled(freq, startTime, duration) {
+  if (!audioCtx) return null;
 
   // Fundamental oscillator (sine)
   const osc1 = audioCtx.createOscillator();
   osc1.type = "sine";
-  osc1.frequency.setValueAtTime(freq, now);
+  osc1.frequency.setValueAtTime(freq, startTime);
 
   // Overtone oscillator (sine at 4x frequency for metallic tine resonance)
   const osc2 = audioCtx.createOscillator();
   osc2.type = "sine";
-  osc2.frequency.setValueAtTime(freq * 4.0, now);
+  osc2.frequency.setValueAtTime(freq * 4.0, startTime);
 
   // Envelope for fundamental note
   const noteGain = audioCtx.createGain();
-  noteGain.gain.setValueAtTime(0, now);
-  noteGain.gain.linearRampToValueAtTime(0.15, now + 0.003);
-  noteGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+  noteGain.gain.setValueAtTime(0, startTime);
+  noteGain.gain.linearRampToValueAtTime(0.15, startTime + 0.003);
+  noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + Math.min(duration, 1.2));
 
   // Envelope for overtone
   const overtoneGain = audioCtx.createGain();
-  overtoneGain.gain.setValueAtTime(0, now);
-  overtoneGain.gain.linearRampToValueAtTime(0.02, now + 0.003);
-  overtoneGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+  overtoneGain.gain.setValueAtTime(0, startTime);
+  overtoneGain.gain.linearRampToValueAtTime(0.02, startTime + 0.003);
+  overtoneGain.gain.exponentialRampToValueAtTime(0.0001, startTime + Math.min(duration * 0.5, 0.4));
 
   osc1.connect(noteGain);
   osc2.connect(overtoneGain);
@@ -518,11 +504,39 @@ function triggerChimeNote(freq) {
   noteGain.connect(masterGain);
   overtoneGain.connect(masterGain);
 
-  osc1.start(now);
-  osc2.start(now);
+  osc1.start(startTime);
+  osc2.start(startTime);
 
-  osc1.stop(now + 1.3);
-  osc2.stop(now + 1.3);
+  osc1.stop(startTime + Math.min(duration, 1.3));
+  osc2.stop(startTime + Math.min(duration, 1.3));
+
+  return [osc1, osc2];
+}
+
+function scheduleMelodyLoop(startTime) {
+  const tempo = 125; // Dixie Cups tempo
+  const beatDuration = 60 / tempo;
+  
+  MELODY.forEach(step => {
+    const noteTime = startTime + step.beat * beatDuration;
+    const freq = NOTE_FREQS[step.note];
+    if (freq) {
+      const nodes = triggerChimeNoteScheduled(freq, noteTime, step.duration * beatDuration);
+      if (nodes) {
+        scheduledNodes.push(...nodes);
+      }
+    }
+  });
+
+  // Schedule the next loop
+  const nextLoopTime = startTime + LOOP_DURATION_BEATS * beatDuration;
+  const msToNext = (nextLoopTime - audioCtx.currentTime) * 1000;
+  
+  loopTimer = setTimeout(() => {
+    if (isAudioPlaying) {
+      scheduleMelodyLoop(nextLoopTime);
+    }
+  }, msToNext - 200); // 200ms look-ahead buffer
 }
 
 function toggleAudio() {
@@ -531,20 +545,33 @@ function toggleAudio() {
   if (isAudioPlaying) {
     isAudioPlaying = false;
     audioBtn.classList.remove("active");
-    if (chimeTimer) {
-      clearTimeout(chimeTimer);
-      chimeTimer = null;
+    if (loopTimer) {
+      clearTimeout(loopTimer);
+      loopTimer = null;
     }
+    // Stop all active scheduled nodes
+    scheduledNodes.forEach(node => {
+      try {
+        node.stop();
+      } catch (e) {
+        // Already stopped
+      }
+    });
+    scheduledNodes = [];
   } else {
     isAudioPlaying = true;
     audioBtn.classList.add("active");
+    
+    if (!audioCtx) {
+      initAudioContext();
+    }
     
     if (audioCtx && audioCtx.state === "suspended") {
       audioCtx.resume();
     }
     
-    currentNoteIndex = 0;
-    playMelodyStep();
+    scheduledNodes = [];
+    scheduleMelodyLoop(audioCtx.currentTime + 0.05);
   }
 }
 
