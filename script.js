@@ -634,12 +634,20 @@ function initAudioContext() {
       }
     });
     
-    // iOS Web Audio API Unlocker (play a tiny silent buffer)
-    const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
-    const silentSource = audioCtx.createBufferSource();
-    silentSource.buffer = silentBuffer;
-    silentSource.connect(audioCtx.destination);
-    if (silentSource.start) silentSource.start(0);
+    // iOS Web Audio API Unlocker (play a tiny silent buffer matching sampleRate to avoid NotSupportedError on Safari)
+    try {
+      let unlockSR = audioCtx.sampleRate || 44100;
+      if (isNaN(unlockSR) || unlockSR <= 0) {
+        unlockSR = 44100;
+      }
+      const silentBuffer = audioCtx.createBuffer(1, 1, unlockSR);
+      const silentSource = audioCtx.createBufferSource();
+      silentSource.buffer = silentBuffer;
+      silentSource.connect(audioCtx.destination);
+      if (silentSource.start) silentSource.start(0);
+    } catch (unlockErr) {
+      console.warn("Failed to play silent Web Audio unlock buffer:", unlockErr);
+    }
     
     masterGain = audioCtx.createGain();
     masterGain.gain.value = 0.35;
@@ -682,8 +690,16 @@ function initAudioContext() {
     delayNodeR.connect(feedbackGainR);
     feedbackGainR.connect(delayNodeL);
     
-    const panDelayL = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
-    const panDelayR = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+    let panDelayL = null;
+    let panDelayR = null;
+    try {
+      if (audioCtx.createStereoPanner) {
+        panDelayL = audioCtx.createStereoPanner();
+        panDelayR = audioCtx.createStereoPanner();
+      }
+    } catch (e) {
+      console.warn("Delay channel stereo panners failed to create/initialize:", e);
+    }
     
     const delayDryWet = audioCtx.createGain();
     delayDryWet.gain.value = 0.06; // Subtle 6% wet ping-pong echo
@@ -913,8 +929,16 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
   gainR.gain.linearRampToValueAtTime(0, startTime + duration + releaseTime);
 
   // Stereo panning to position instruments in the virtual orchestra space
-  const panL = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
-  const panR = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+  let panL = null;
+  let panR = null;
+  try {
+    if (audioCtx.createStereoPanner) {
+      panL = audioCtx.createStereoPanner();
+      panR = audioCtx.createStereoPanner();
+    }
+  } catch (e) {
+    console.warn("Note stereo panners failed to create/initialize:", e);
+  }
   
   let panPosL = -0.3;
   let panPosR = 0.3;
