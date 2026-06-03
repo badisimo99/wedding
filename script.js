@@ -5,7 +5,7 @@ const DEFAULT_CONFIG = {
   location: "Marchand Ranch, Cañon City, CO",
   tagline: "Are getting married! Please join us to celebrate our love and new beginnings.",
   theme: "ivory",
-  webhookUrl: "https://script.google.com/macros/s/AKfycbyBoqhvZzJRmMYdBirtLQr_3_nPNWvFYxQG6_UUrafPjlSycjUF8uCyDqgVEIxkU9yj/exec"
+  webhookUrl: "https://script.google.com/macros/s/AKfycbxYoL9g8ccwMuXLYnjOOXxHdIyIsgma0nydzhcGZMmsOoOBYntceaDlk2V2TToS9Apo/exec"
 };
 
 let config = { ...DEFAULT_CONFIG };
@@ -47,7 +47,9 @@ function loadConfig() {
         saveConfig();
       }
       // Migrate empty or old broken webhooks to the new default automatically
-      if (!config.webhookUrl || config.webhookUrl.includes("AKfycbwQr7MGf-06CBBWKcyMp2C46CnkeyTUoY7O68nplw1wdQ3wmeYxEGpNMP20yDhetPUJ")) {
+      if (!config.webhookUrl || 
+          config.webhookUrl.includes("AKfycbwQr7MGf-06CBBWKcyMp2C46CnkeyTUoY7O68nplw1wdQ3wmeYxEGpNMP20yDhetPUJ") ||
+          config.webhookUrl.includes("AKfycbyBoqhvZzJRmMYdBirtLQr_3_nPNWvFYxQG6_UUrafPjlSycjUF8uCyDqgVEIxkU9yj")) {
         config.webhookUrl = DEFAULT_CONFIG.webhookUrl;
         saveConfig();
       }
