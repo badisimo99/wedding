@@ -1484,7 +1484,7 @@ function downloadCardImage() {
   // Website URL
   c.fillStyle = textColor;
   c.font = "italic 300 24px 'Cormorant Garamond', serif";
-  c.fillText("www.sofiaandrussellaregettingmarried.com", 600, 1445);
+  c.fillText("sofiaandrussellaregettingmarried.vercel.app", 600, 1445);
 
   // Convert to image and trigger download
   const link = document.createElement("a");
