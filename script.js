@@ -33,6 +33,13 @@ document.addEventListener("DOMContentLoaded", () => {
   setupEventListeners();
   startCountdown();
   renderRSVPTable();
+
+  // Show edit cog if ?edit=true or ?admin=true is in URL query parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has("edit") || urlParams.has("admin")) {
+    const editBtn = document.getElementById("edit-btn");
+    if (editBtn) editBtn.style.display = "flex";
+  }
 });
 
 // --- Configuration Persistence ---
@@ -251,9 +258,6 @@ function setupEventListeners() {
     const successMsg = document.getElementById("rsvp-success-message");
     successMsg.style.display = "block";
     successMsg.innerHTML = `<strong>Thank you, ${escapeHtml(guestName)}!</strong><br>Your RSVP has been saved. We'll send update details to ${escapeHtml(guestEmail)}.`;
-
-    // Automatically trigger chime synthesizer on submit for subtle interaction
-    playChimeMelody();
   });
 
   // RSVP CSV Export

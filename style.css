@@ -642,3 +642,7 @@ main {
     right: 1rem;
   }
 }
+
+#edit-btn {
+  display: none;
+}
