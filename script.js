@@ -599,6 +599,13 @@ function initAudioContext() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AudioContextClass();
     
+    // iOS Web Audio API Unlocker (play a tiny silent buffer)
+    const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
+    const silentSource = audioCtx.createBufferSource();
+    silentSource.buffer = silentBuffer;
+    silentSource.connect(audioCtx.destination);
+    if (silentSource.start) silentSource.start(0);
+    
     masterGain = audioCtx.createGain();
     masterGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
     masterGain.connect(audioCtx.destination);
@@ -1141,18 +1148,31 @@ function toggleAudio() {
     isAudioPlaying = true;
     audioBtn.classList.add("active");
     
+    // iOS Silent Switch Bypass: Play a tiny silent WAV via HTMLAudioElement to route Web Audio to the main media output
+    try {
+      const silentAudio = new Audio();
+      silentAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAAA";
+      silentAudio.play().catch(e => console.log("Silent switch bypass rejected:", e));
+    } catch (err) {
+      console.log("Silent switch bypass omitted:", err);
+    }
+
     if (!audioCtx) {
       initAudioContext();
     }
     
-    if (audioCtx && audioCtx.state === "suspended") {
-      audioCtx.resume();
-    }
-    
     scheduledNodes = [];
     
-    // Start lookahead scheduler
-    startScheduler();
+    if (audioCtx && audioCtx.state === "suspended") {
+      audioCtx.resume().then(() => {
+        startScheduler();
+      }).catch(err => {
+        console.error("Failed to resume AudioContext on mobile:", err);
+        startScheduler(); // Fallback start anyway
+      });
+    } else {
+      startScheduler();
+    }
   }
 }
 
