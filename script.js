@@ -1,3 +1,77 @@
+// --- Mobile Debug Overlay (Runs only when ?debug=true is present in the URL query string) ---
+(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has("debug")) {
+    const debugOverlay = document.createElement("div");
+    debugOverlay.style.position = "fixed";
+    debugOverlay.style.bottom = "0";
+    debugOverlay.style.left = "0";
+    debugOverlay.style.width = "100%";
+    debugOverlay.style.maxHeight = "180px";
+    debugOverlay.style.overflowY = "auto";
+    debugOverlay.style.backgroundColor = "rgba(0, 0, 0, 0.9)";
+    debugOverlay.style.color = "#ff4d4d";
+    debugOverlay.style.fontSize = "11px";
+    debugOverlay.style.fontFamily = "monospace";
+    debugOverlay.style.padding = "8px";
+    debugOverlay.style.zIndex = "999999";
+    debugOverlay.style.borderTop = "2px solid #ff4d4d";
+    debugOverlay.id = "mobile-debug-overlay";
+    
+    // Create clear button
+    const clearBtn = document.createElement("button");
+    clearBtn.innerText = "Clear logs";
+    clearBtn.style.position = "absolute";
+    clearBtn.style.top = "2px";
+    clearBtn.style.right = "8px";
+    clearBtn.style.backgroundColor = "#ff4d4d";
+    clearBtn.style.color = "#000";
+    clearBtn.style.border = "none";
+    clearBtn.style.padding = "2px 6px";
+    clearBtn.style.fontSize = "9px";
+    clearBtn.style.borderRadius = "3px";
+    clearBtn.style.cursor = "pointer";
+    clearBtn.onclick = (e) => {
+      e.stopPropagation();
+      debugOverlay.innerHTML = "";
+      debugOverlay.appendChild(clearBtn);
+    };
+    debugOverlay.appendChild(clearBtn);
+    
+    document.documentElement.appendChild(debugOverlay);
+
+    const logToOverlay = (msg) => {
+      const line = document.createElement("div");
+      line.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      line.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
+      line.style.padding = "2px 0";
+      debugOverlay.appendChild(line);
+      debugOverlay.scrollTop = debugOverlay.scrollHeight;
+    };
+
+    window.addEventListener("error", (e) => {
+      logToOverlay(`ERROR: ${e.message} at ${e.filename}:${e.lineno}`);
+    });
+    window.addEventListener("unhandledrejection", (e) => {
+      logToOverlay(`REJECTION: ${e.reason}`);
+    });
+
+    const originalConsoleError = console.error;
+    console.error = function(...args) {
+      logToOverlay(`CONSOLE.ERROR: ${args.join(" ")}`);
+      originalConsoleError.apply(console, args);
+    };
+
+    const originalConsoleLog = console.log;
+    console.log = function(...args) {
+      logToOverlay(`LOG: ${args.join(" ")}`);
+      originalConsoleLog.apply(console, args);
+    };
+    
+    logToOverlay("Debugger initialized. URL: " + window.location.href);
+  }
+})();
+
 // --- State Management ---
 const DEFAULT_CONFIG = {
   names: "Sofia & Russell",
@@ -613,6 +687,17 @@ function createCathedralImpulseResponse(audioCtx, duration = 3.6, decay = 2.4) {
 function initAudioContext() {
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    
+    // Safari AudioContext initialization workaround (Double-Initialize trick)
+    try {
+      const tempCtx = new AudioContextClass();
+      if (tempCtx.close) {
+        tempCtx.close().catch(() => {});
+      }
+    } catch (e) {
+      console.warn("Safari double-initialize workaround temp context failed:", e);
+    }
+
     audioCtx = new AudioContextClass();
 
     // Track state change to keep UI in sync if the OS suspends or interrupts the context
@@ -655,10 +740,7 @@ function initAudioContext() {
 
     // 1. Setup Procedural Cathedral Convolution Reverb Send Effect
     convolverNode = audioCtx.createConvolver();
-    const impulseBuffer = createCathedralImpulseResponse(audioCtx, 4.0, 2.8);
-    if (impulseBuffer) {
-      convolverNode.buffer = impulseBuffer;
-    }
+    // Buffer generation is deferred until the context is running to ensure matching sample rates on iOS Safari
 
     preDelayNode = audioCtx.createDelay(0.5);
     preDelayNode.delayTime.value = 0.050; // 50ms pre-delay
@@ -1114,6 +1196,18 @@ function startScheduler() {
   const loopLengthTime = LOOP_DURATION_BEATS * beatDuration;
   const scheduleAheadTime = 0.250; // schedule 250ms in advance
   const schedulerIntervalMs = 50;  // check every 50ms
+
+  // Generate and assign convolverNode.buffer now that context is confirmed to be running and sample rate is accurate
+  if (convolverNode && !convolverNode.buffer && audioCtx) {
+    try {
+      const impulseBuffer = createCathedralImpulseResponse(audioCtx, 4.0, 2.8);
+      if (impulseBuffer) {
+        convolverNode.buffer = impulseBuffer;
+      }
+    } catch (convolverErr) {
+      console.warn("Deferred convolver initialization failed:", convolverErr);
+    }
+  }
 
   // Initialize loop timeline pointer
   let currentLoopStartAudioTime = audioCtx.currentTime + 0.05;
