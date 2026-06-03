@@ -63,11 +63,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const shareBtn = document.getElementById("share-btn");
     if (shareBtn) shareBtn.style.display = "flex";
   } else {
-    // Fallback: Check if the visitor's public IP matches your current IP address (198.181.63.200)
+    // Check if the visitor's public IP matches your current IP address (198.181.63.200)
     fetch("https://api.ipify.org?format=json")
       .then(res => res.json())
       .then(data => {
         if (data.ip === "198.181.63.200") {
+          const editBtn = document.getElementById("edit-btn");
+          if (editBtn) editBtn.style.display = "flex";
           const shareBtn = document.getElementById("share-btn");
           if (shareBtn) shareBtn.style.display = "flex";
         }
