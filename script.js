@@ -21,6 +21,9 @@ let delayNodeL = null;
 let delayNodeR = null;
 let feedbackGainL = null;
 let feedbackGainR = null;
+let convolverNode = null;
+let reverbGain = null;
+let preDelayNode = null;
 
 
 
@@ -518,6 +521,38 @@ const CELLO_LINE = [
 
 const LOOP_DURATION_BEATS = 32;
 
+function createCathedralImpulseResponse(audioCtx, duration = 3.6, decay = 2.4) {
+  const sampleRate = audioCtx.sampleRate;
+  const length = sampleRate * duration;
+  const impulse = audioCtx.createBuffer(2, length, sampleRate);
+  const left = impulse.getChannelData(0);
+  const right = impulse.getChannelData(1);
+
+  let lastOutL = 0;
+  let lastOutR = 0;
+
+  for (let i = 0; i < length; i++) {
+    // Generate stereo de-correlated white noise
+    const noiseL = Math.random() * 2 - 1;
+    const noiseR = Math.random() * 2 - 1;
+    
+    // Exponential envelope decay
+    const envelope = Math.exp(-i / (sampleRate * (decay / 6.0)));
+    
+    // Simulate high-frequency absorption over time using a 1-pole lowpass filter
+    // that gets progressively dampening as the tail decays
+    const progress = i / length;
+    const alpha = 0.04 + 0.92 * progress;
+    
+    lastOutL = (1 - alpha) * lastOutL + alpha * noiseL;
+    lastOutR = (1 - alpha) * lastOutR + alpha * noiseR;
+
+    left[i] = lastOutL * envelope * 0.70;
+    right[i] = lastOutR * envelope * 0.70;
+  }
+  return impulse;
+}
+
 function initAudioContext() {
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -527,34 +562,45 @@ function initAudioContext() {
     masterGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
     masterGain.connect(audioCtx.destination);
 
-    // Create Stereo Cathedral Echo/Reverb Delays
+    // 1. Setup Procedural Cathedral Convolution Reverb
+    convolverNode = audioCtx.createConvolver();
+    convolverNode.buffer = createCathedralImpulseResponse(audioCtx, 3.8, 2.6);
+
+    preDelayNode = audioCtx.createDelay(0.5);
+    preDelayNode.delayTime.setValueAtTime(0.045, audioCtx.currentTime); // 45ms pre-delay
+
+    reverbGain = audioCtx.createGain();
+    reverbGain.gain.setValueAtTime(0.30, audioCtx.currentTime); // 30% wet mix
+
+    // Connect convolution reverb chain
+    preDelayNode.connect(convolverNode);
+    convolverNode.connect(reverbGain);
+    reverbGain.connect(masterGain);
+
+    // 2. Setup Stereo Ping-Pong Delay as a subtle secondary echo texture
     delayNodeL = audioCtx.createDelay(1.0);
     delayNodeR = audioCtx.createDelay(1.0);
     
-    // 350ms delay for Left, 500ms delay for Right
     delayNodeL.delayTime.setValueAtTime(0.35, audioCtx.currentTime);
     delayNodeR.delayTime.setValueAtTime(0.50, audioCtx.currentTime);
     
     feedbackGainL = audioCtx.createGain();
     feedbackGainR = audioCtx.createGain();
     
-    // Lush, long feedback tail (feedback = 0.45)
-    feedbackGainL.gain.setValueAtTime(0.45, audioCtx.currentTime);
-    feedbackGainR.gain.setValueAtTime(0.45, audioCtx.currentTime);
+    feedbackGainL.gain.setValueAtTime(0.40, audioCtx.currentTime);
+    feedbackGainR.gain.setValueAtTime(0.40, audioCtx.currentTime);
     
-    // Cross-feed feedback loops (Ping-Pong Delay) for massive stereo space
     delayNodeL.connect(feedbackGainL);
-    feedbackGainL.connect(delayNodeR); // L feeds R
+    feedbackGainL.connect(delayNodeR);
     
     delayNodeR.connect(feedbackGainR);
-    feedbackGainR.connect(delayNodeL); // R feeds L
+    feedbackGainR.connect(delayNodeL);
     
-    // Pan the delay outputs to opposite sides
     const panDelayL = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
     const panDelayR = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
     
     const delayDryWet = audioCtx.createGain();
-    delayDryWet.gain.setValueAtTime(0.22, audioCtx.currentTime); // 22% wet delay signal
+    delayDryWet.gain.setValueAtTime(0.06, audioCtx.currentTime); // Subtle 6% wet ping-pong echo
 
     if (panDelayL && panDelayR) {
       panDelayL.pan.setValueAtTime(-0.8, audioCtx.currentTime);
@@ -659,6 +705,53 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
   notchR.frequency.setValueAtTime(3200, startTime);
   notchR.Q.setValueAtTime(2.0, startTime);
 
+  // 3. Custom EQ filters to sweeten tones and carve pocket spaces for each instrument
+  const eqL = audioCtx.createBiquadFilter();
+  const eqR = audioCtx.createBiquadFilter();
+
+  if (instrument === "violin") {
+    eqL.type = "highshelf";
+    eqL.frequency.setValueAtTime(6000, startTime);
+    eqL.gain.setValueAtTime(3.0, startTime);
+
+    eqR.type = "highshelf";
+    eqR.frequency.setValueAtTime(6000, startTime);
+    eqR.gain.setValueAtTime(3.0, startTime);
+  } else if (instrument === "cello") {
+    eqL.type = "peaking";
+    eqL.frequency.setValueAtTime(90, startTime);
+    eqL.Q.setValueAtTime(1.2, startTime);
+    eqL.gain.setValueAtTime(4.0, startTime);
+
+    eqR.type = "peaking";
+    eqR.frequency.setValueAtTime(90, startTime);
+    eqR.Q.setValueAtTime(1.2, startTime);
+    eqR.gain.setValueAtTime(4.0, startTime);
+  } else {
+    // viola
+    eqL.type = "peaking";
+    eqL.frequency.setValueAtTime(250, startTime);
+    eqL.Q.setValueAtTime(1.0, startTime);
+    eqL.gain.setValueAtTime(2.0, startTime);
+
+    eqR.type = "peaking";
+    eqR.frequency.setValueAtTime(250, startTime);
+    eqR.Q.setValueAtTime(1.0, startTime);
+    eqR.gain.setValueAtTime(2.0, startTime);
+  }
+
+  // 4. Slow Bowing modulation LFO to simulate human breathing/pressure intensity changes
+  const bowingLFO = audioCtx.createOscillator();
+  bowingLFO.type = "sine";
+  bowingLFO.frequency.setValueAtTime(0.35 + Math.random() * 0.15, startTime);
+
+  const bowingGain = audioCtx.createGain();
+  bowingGain.gain.setValueAtTime(filterStartFreq * 0.18, startTime); // modulate up to 18% of cutoff
+
+  bowingLFO.connect(bowingGain);
+  bowingGain.connect(filterL.frequency);
+  bowingGain.connect(filterR.frequency);
+
   // Master Gain for Left/Right channels (Breathing/Organic Attack & Release Envelopes)
   const gainL = audioCtx.createGain();
   const gainR = audioCtx.createGain();
@@ -696,32 +789,38 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
 
   // Connect routing chains
   filterL.connect(notchL);
-  notchL.connect(gainL);
+  notchL.connect(eqL);
+  eqL.connect(gainL);
 
   filterR.connect(notchR);
-  notchR.connect(gainR);
+  notchR.connect(eqR);
+  eqR.connect(gainR);
 
   if (panL) {
     gainL.connect(panL);
     panL.connect(masterGain);
+    if (preDelayNode) panL.connect(preDelayNode);
     if (delayNodeL) panL.connect(delayNodeL);
   } else {
     gainL.connect(masterGain);
+    if (preDelayNode) gainL.connect(preDelayNode);
     if (delayNodeL) gainL.connect(delayNodeL);
   }
 
   if (panR) {
     gainR.connect(panR);
     panR.connect(masterGain);
+    if (preDelayNode) panR.connect(preDelayNode);
     if (delayNodeR) panR.connect(delayNodeR);
   } else {
     gainR.connect(masterGain);
+    if (preDelayNode) gainR.connect(preDelayNode);
     if (delayNodeR) gainR.connect(delayNodeR);
   }
 
   const stopTime = startTime + duration + releaseTime + 0.1;
 
-  // 3. Triangle Core Voice (anchors the fundamental frequency with warm woody resonance)
+  // 5. Triangle Core Voice (anchors the fundamental frequency with warm woody resonance)
   const oscTri = audioCtx.createOscillator();
   oscTri.type = "triangle";
   oscTri.frequency.setValueAtTime(freq, startTime);
@@ -739,7 +838,7 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
   oscTri.stopTime = stopTime;
   oscillators.push(oscTri);
 
-  // 4. Detuned Sawtooth Voices (provides organic string ensemble friction/sheen)
+  // 6. Detuned Sawtooth Voices (provides organic string ensemble friction/sheen)
   detunes.forEach((detune, idx) => {
     const osc = audioCtx.createOscillator();
     osc.type = "sawtooth";
@@ -766,6 +865,11 @@ function triggerStringNoteScheduled(freq, startTime, duration, instrument = "vio
   lfo.stop(stopTime);
   lfo.stopTime = stopTime;
   oscillators.push(lfo);
+
+  bowingLFO.start(startTime);
+  bowingLFO.stop(stopTime);
+  bowingLFO.stopTime = stopTime;
+  oscillators.push(bowingLFO);
 
   return oscillators;
 }
