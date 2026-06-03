@@ -5,7 +5,7 @@ const DEFAULT_CONFIG = {
   location: "Marchand Ranch, Cañon City, CO",
   tagline: "Are getting married! Please join us to celebrate our love and new beginnings.",
   theme: "ivory",
-  webhookUrl: ""
+  webhookUrl: "https://script.google.com/macros/s/AKfycbwQr7MGf-06CBBWKcyMp2C46CnkeyTUoY7O68nplw1wdQ3wmeYxEGpNMP20yDhetPUJ/exec"
 };
 
 let config = { ...DEFAULT_CONFIG };
@@ -44,6 +44,11 @@ function loadConfig() {
       // Migrate old placeholder defaults automatically
       if (config.names === "Sophia & Julian" || config.names === "Sophia and Julian" || config.date === "2026-09-19T17:00:00") {
         config = { ...DEFAULT_CONFIG };
+        saveConfig();
+      }
+      // Migrate empty webhook to the hardcoded default automatically
+      if (!config.webhookUrl) {
+        config.webhookUrl = DEFAULT_CONFIG.webhookUrl;
         saveConfig();
       }
     } catch (e) {
