@@ -3,7 +3,7 @@ const DEFAULT_CONFIG = {
   names: "Sofia & Russell",
   date: "2026-10-08T17:00:00",
   location: "Marchand Ranch, Cañon City, CO",
-  tagline: "Are getting hitched! Please join us to celebrate our love and the next step this exciting new journey.",
+  tagline: "Are getting hitched! Please join us to celebrate our love as we take this exciting next step in our journey.",
   theme: "ivory",
   webhookUrl: "https://script.google.com/macros/s/AKfycbzvR7KAfAh2Jld9AAloryj9W8npzj3S2DcH-TWJJPdD-T59W2h7yF4lzRw2BWws-_hW/exec"
 };
@@ -11,10 +11,13 @@ const DEFAULT_CONFIG = {
 let config = { ...DEFAULT_CONFIG };
 let rsvps = [];
 
-// Audio Player State (YouTube IFrame Integration)
+// Web Audio API Context and Synthesizer Nodes
+let audioCtx = null;
+let masterGain = null;
+let delayNode = null;
 let isAudioPlaying = false;
-let ytPlayer = null;
-let isYtReady = false;
+let chimeTimer = null; // Reused as the melody sequence timeout
+let currentNoteIndex = 0;
 
 // Canvas Particles
 let canvas = null;
@@ -51,7 +54,8 @@ function loadConfig() {
         saveConfig();
       }
       // Migrate old tagline automatically
-      if (config.tagline === "Are getting married! Please join us to celebrate our love and new beginnings.") {
+      if (config.tagline === "Are getting married! Please join us to celebrate our love and new beginnings." ||
+          config.tagline === "Are getting hitched! Please join us to celebrate our love and the next step this exciting new journey.") {
         config.tagline = DEFAULT_CONFIG.tagline;
         saveConfig();
       }
@@ -177,20 +181,20 @@ function setupEventListeners() {
 
   // Design Studio Input Updates (Live Preview)
   document.getElementById("input-names").addEventListener("input", (e) => {
-    config.names = e.target.value || "Sophia & Julian";
+    config.names = e.target.value || "Sofia & Russell";
     document.getElementById("couple-names-preview").innerHTML = formatNames(config.names);
     saveConfig();
   });
 
   document.getElementById("input-date").addEventListener("input", (e) => {
-    config.date = e.target.value || "2026-09-19T17:00:00";
+    config.date = e.target.value || "2026-10-08T17:00:00";
     document.getElementById("wedding-date-preview").innerText = formatDate(config.date);
     startCountdown();
     saveConfig();
   });
 
   document.getElementById("input-location").addEventListener("input", (e) => {
-    config.location = e.target.value || "San Francisco, California";
+    config.location = e.target.value || "Marchand Ranch, Cañon City, CO";
     document.getElementById("wedding-location-preview").innerText = config.location;
     saveConfig();
   });
@@ -375,52 +379,187 @@ function exportRSVPsCSV() {
   document.body.removeChild(link);
 }
 
-// Load YouTube IFrame API
-const tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-const firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-// Define global YouTube callback
-window.onYouTubeIframeAPIReady = function() {
-  ytPlayer = new YT.Player('youtube-player', {
-    height: '200',
-    width: '300',
-    videoId: 'F3S13y27d14',
-    playerVars: {
-      'playsinline': 1,
-      'controls': 0,
-      'disablekb': 1,
-      'fs': 0,
-      'modestbranding': 1,
-      'rel': 0,
-      'showinfo': 0,
-      'loop': 1,
-      'playlist': 'F3S13y27d14'
-    },
-    events: {
-      'onReady': () => {
-        isYtReady = true;
-      }
-    }
-  });
+// Chime Melody System (Web Audio API)
+const NOTE_FREQS = {
+  "G4": 392.00,
+  "A4": 440.00,
+  "B4": 493.88,
+  "C5": 523.25,
+  "D5": 587.33,
+  "E5": 659.25,
+  "F#5": 739.99,
+  "G5": 783.99
 };
+
+const MELODY = [
+  // Line 1: Goin' to the chapel and we're gonna get married
+  { note: "D5", beats: 1.0 },
+  { note: "D5", beats: 0.5 },
+  { note: "E5", beats: 0.5 },
+  { note: "D5", beats: 1.0 },
+  { note: "B4", beats: 2.0 },
+  { note: "REST", beats: 1.0 },
+  { note: "D5", beats: 1.0 },
+  { note: "D5", beats: 0.5 },
+  { note: "E5", beats: 0.5 },
+  { note: "D5", beats: 1.0 },
+  { note: "B4", beats: 1.0 },
+  { note: "A4", beats: 1.0 },
+  { note: "G4", beats: 2.0 },
+  { note: "REST", beats: 3.0 },
+
+  // Line 2: Goin' to the chapel and we're gonna get married
+  { note: "D5", beats: 1.0 },
+  { note: "D5", beats: 0.5 },
+  { note: "E5", beats: 0.5 },
+  { note: "D5", beats: 1.0 },
+  { note: "B4", beats: 2.0 },
+  { note: "REST", beats: 1.0 },
+  { note: "D5", beats: 1.0 },
+  { note: "D5", beats: 0.5 },
+  { note: "E5", beats: 0.5 },
+  { note: "D5", beats: 1.0 },
+  { note: "B4", beats: 1.0 },
+  { note: "A4", beats: 1.0 },
+  { note: "G4", beats: 2.0 },
+  { note: "REST", beats: 3.0 },
+
+  // Line 3: Gee, I really love you and we're gonna get married
+  { note: "G5", beats: 1.0 },
+  { note: "G5", beats: 0.5 },
+  { note: "G5", beats: 0.5 },
+  { note: "E5", beats: 1.0 },
+  { note: "G5", beats: 1.0 },
+  { note: "E5", beats: 1.0 },
+  { note: "REST", beats: 1.0 },
+  { note: "D5", beats: 1.0 },
+  { note: "D5", beats: 0.5 },
+  { note: "E5", beats: 0.5 },
+  { note: "D5", beats: 1.0 },
+  { note: "B4", beats: 1.0 },
+  { note: "A4", beats: 1.0 },
+  { note: "G4", beats: 2.0 },
+  { note: "REST", beats: 3.0 },
+
+  // Line 4: Goin' to the chapel of love
+  { note: "D5", beats: 1.0 },
+  { note: "D5", beats: 0.5 },
+  { note: "E5", beats: 0.5 },
+  { note: "D5", beats: 1.0 },
+  { note: "B4", beats: 1.0 },
+  { note: "B4", beats: 1.0 },
+  { note: "A4", beats: 1.0 },
+  { note: "G4", beats: 2.0 },
+  { note: "REST", beats: 8.0 }
+];
+
+const TEMPO = 135; // BPM
+const BEAT_DURATION = 60 / TEMPO;
+
+function playMelodyStep() {
+  if (!isAudioPlaying) return;
+
+  const currentStep = MELODY[currentNoteIndex];
+  const noteName = currentStep.note;
+  const beats = currentStep.beats;
+  const durationSec = beats * BEAT_DURATION;
+
+  if (noteName !== "REST" && NOTE_FREQS[noteName]) {
+    triggerChimeNote(NOTE_FREQS[noteName]);
+  }
+
+  currentNoteIndex = (currentNoteIndex + 1) % MELODY.length;
+  
+  // Schedule next step
+  chimeTimer = setTimeout(playMelodyStep, durationSec * 1000);
+}
+
+function triggerChimeNote(freq) {
+  if (!audioCtx) {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContextClass();
+      
+      masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+      
+      delayNode = audioCtx.createDelay(1.0);
+      delayNode.delayTime.setValueAtTime(0.35, audioCtx.currentTime);
+      
+      const feedbackGain = audioCtx.createGain();
+      feedbackGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+      
+      delayNode.connect(feedbackGain);
+      feedbackGain.connect(delayNode);
+      
+      masterGain.connect(audioCtx.destination);
+      delayNode.connect(masterGain);
+    } catch (err) {
+      console.error("Failed to initialize Web Audio API:", err);
+      return;
+    }
+  }
+
+  const now = audioCtx.currentTime;
+
+  // Fundamental oscillator (sine)
+  const osc1 = audioCtx.createOscillator();
+  osc1.type = "sine";
+  osc1.frequency.setValueAtTime(freq, now);
+
+  // Overtone oscillator (sine at 4x frequency for metallic tine resonance)
+  const osc2 = audioCtx.createOscillator();
+  osc2.type = "sine";
+  osc2.frequency.setValueAtTime(freq * 4.0, now);
+
+  // Envelope for fundamental note
+  const noteGain = audioCtx.createGain();
+  noteGain.gain.setValueAtTime(0, now);
+  noteGain.gain.linearRampToValueAtTime(0.15, now + 0.003);
+  noteGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+
+  // Envelope for overtone
+  const overtoneGain = audioCtx.createGain();
+  overtoneGain.gain.setValueAtTime(0, now);
+  overtoneGain.gain.linearRampToValueAtTime(0.02, now + 0.003);
+  overtoneGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+
+  osc1.connect(noteGain);
+  osc2.connect(overtoneGain);
+
+  noteGain.connect(masterGain);
+  noteGain.connect(delayNode);
+
+  overtoneGain.connect(masterGain);
+  overtoneGain.connect(delayNode);
+
+  osc1.start(now);
+  osc2.start(now);
+
+  osc1.stop(now + 1.3);
+  osc2.stop(now + 1.3);
+}
 
 function toggleAudio() {
   const audioBtn = document.getElementById("audio-btn");
-  if (!isYtReady || !ytPlayer) {
-    alert("Audio player is loading. Please try again in a moment!");
-    return;
-  }
 
   if (isAudioPlaying) {
-    ytPlayer.pauseVideo();
     isAudioPlaying = false;
     audioBtn.classList.remove("active");
+    if (chimeTimer) {
+      clearTimeout(chimeTimer);
+      chimeTimer = null;
+    }
   } else {
-    ytPlayer.playVideo();
     isAudioPlaying = true;
     audioBtn.classList.add("active");
+    
+    if (audioCtx && audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+    
+    currentNoteIndex = 0;
+    playMelodyStep();
   }
 }
 
