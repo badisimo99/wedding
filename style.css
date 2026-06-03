@@ -1,0 +1,644 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Montserrat:wght@200;300;400;500;600&display=swap');
+
+/* --- Theme Variable Definitions --- */
+:root {
+  /* Classic Ivory & Gold (Default Theme) */
+  --bg-primary: #fbf9f4;
+  --bg-secondary: #f4efe6;
+  --accent-color: #c5a059;
+  --accent-hover: #b08c47;
+  --text-primary: #2d2a26;
+  --text-secondary: #5c5852;
+  --text-light: #8e877d;
+  --card-bg: rgba(244, 239, 230, 0.65);
+  --card-border: rgba(197, 160, 89, 0.25);
+  --shadow-color: rgba(92, 88, 82, 0.08);
+  --glow-color: rgba(197, 160, 89, 0.15);
+  --font-serif: 'Cormorant Garamond', serif;
+  --font-sans: 'Montserrat', sans-serif;
+  --panel-bg: rgba(251, 249, 254, 0.85);
+  --overlay-bg: rgba(251, 249, 254, 0.4);
+}
+
+[data-theme="midnight"] {
+  --bg-primary: #0a0b12;
+  --bg-secondary: #121422;
+  --accent-color: #a5b4fc;
+  --accent-hover: #c7d2fe;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-light: #94a3b8;
+  --card-bg: rgba(18, 20, 34, 0.65);
+  --card-border: rgba(165, 180, 252, 0.25);
+  --shadow-color: rgba(0, 0, 0, 0.4);
+  --glow-color: rgba(165, 180, 252, 0.25);
+  --panel-bg: rgba(10, 11, 18, 0.85);
+  --overlay-bg: rgba(10, 11, 18, 0.4);
+}
+
+[data-theme="forest"] {
+  --bg-primary: #141c18;
+  --bg-secondary: #1d2822;
+  --accent-color: #a7f3d0;
+  --accent-hover: #cbd5e1;
+  --text-primary: #f4fbf7;
+  --text-secondary: #cbdad1;
+  --text-light: #8fa699;
+  --card-bg: rgba(29, 40, 34, 0.65);
+  --card-border: rgba(167, 243, 208, 0.25);
+  --shadow-color: rgba(0, 0, 0, 0.35);
+  --glow-color: rgba(167, 243, 208, 0.2);
+  --panel-bg: rgba(20, 28, 24, 0.85);
+  --overlay-bg: rgba(20, 28, 24, 0.4);
+}
+
+/* --- Base & Reset Styles --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  transition: background-color 0.8s ease, color 0.8s ease;
+}
+
+/* Canvas Background for Particle Effects */
+#particle-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Main Wrapper to support page fade in */
+main {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+/* --- Floating Utilities --- */
+.floating-controls {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 10;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.control-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.control-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 10px var(--glow-color);
+  color: var(--accent-color);
+}
+
+.control-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentColor;
+}
+
+/* Audio status indicator pulse */
+.control-btn.active {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  animation: pulse-border 2s infinite;
+}
+
+/* --- Save The Date Card Layout --- */
+.save-the-date-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 16px 40px var(--shadow-color);
+  border-radius: 1.5rem;
+  max-width: 650px;
+  width: 100%;
+  padding: 3rem 2.5rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  text-align: center;
+  position: relative;
+  transition: border-color 0.8s ease, background 0.8s ease, box-shadow 0.8s ease;
+  animation: fade-in-up 1.2s cubic-bezier(0.21, 0.6, 0.35, 1);
+}
+
+/* Card Decorative Borders */
+.save-the-date-card::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 1px dashed var(--card-border);
+  border-radius: 1.1rem;
+  pointer-events: none;
+  transition: border-color 0.8s ease;
+}
+
+/* --- Hero Details --- */
+.pre-title {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  color: var(--accent-color);
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+  transition: color 0.8s ease;
+}
+
+.couple-names {
+  font-family: var(--font-serif);
+  font-size: 3.5rem;
+  font-weight: 300;
+  line-height: 1.15;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.couple-names span.and {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 2.25rem;
+  margin: 0.25rem 0;
+  opacity: 0.7;
+}
+
+.wedding-tagline {
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-weight: 300;
+  margin-bottom: 2rem;
+  max-width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1.5rem 0;
+  gap: 1rem;
+}
+
+.divider::before, .divider::after {
+  content: '';
+  height: 1px;
+  width: 50px;
+  background: var(--card-border);
+  transition: background 0.8s ease;
+}
+
+.divider svg {
+  width: 1rem;
+  height: 1rem;
+  fill: var(--accent-color);
+  transition: fill 0.8s ease;
+}
+
+/* --- Event Info --- */
+.wedding-details {
+  margin-bottom: 2.5rem;
+}
+
+.wedding-date {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+.wedding-location {
+  font-size: 0.95rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* --- Countdown Timer --- */
+.countdown-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-top: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.countdown-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.25rem;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+[data-theme="midnight"] .countdown-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.countdown-val {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  font-weight: 400;
+  color: var(--accent-color);
+}
+
+.countdown-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-light);
+  margin-top: 0.25rem;
+}
+
+/* --- RSVP Form UI --- */
+.rsvp-section {
+  border-top: 1px dashed var(--card-border);
+  padding-top: 2rem;
+  margin-top: 1.5rem;
+}
+
+.rsvp-title {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+.rsvp-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.rsvp-form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 400px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+
+.form-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px var(--glow-color);
+}
+
+.form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23c5a059' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+  padding-right: 2rem;
+}
+
+.submit-btn {
+  background: var(--accent-color);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 0.5rem;
+  box-shadow: 0 4px 10px var(--glow-color);
+}
+
+.submit-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+.rsvp-success {
+  color: var(--text-primary);
+  background: rgba(197, 160, 89, 0.08);
+  border: 1px solid var(--card-border);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  animation: fade-in-up 0.5s ease;
+}
+
+/* --- Design Studio Panel (Sidebar/Drawer) --- */
+.design-studio-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.design-studio-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.design-studio-panel {
+  position: fixed;
+  top: 0;
+  right: -420px;
+  width: 100%;
+  max-width: 400px;
+  height: 100vh;
+  background: var(--panel-bg);
+  border-left: 1px solid var(--card-border);
+  box-shadow: -10px 0 30px var(--shadow-color);
+  z-index: 100;
+  padding: 2.5rem 2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.design-studio-panel.active {
+  right: 0;
+}
+
+.studio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 1rem;
+}
+
+.studio-title {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  color: var(--text-primary);
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  transition: color 0.3s ease;
+}
+
+.close-btn:hover {
+  color: var(--accent-color);
+}
+
+/* Theme Options Selector Grid */
+.theme-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.theme-opt {
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.theme-opt.active {
+  border-color: var(--accent-color);
+  background: rgba(197, 160, 89, 0.05);
+}
+
+.theme-opt-swatch {
+  height: 20px;
+  border-radius: 4px;
+  margin-bottom: 0.35rem;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Form Settings elements in sidepanel */
+.studio-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Admin CSV Button */
+.admin-actions {
+  border-top: 1px dashed var(--card-border);
+  padding-top: 1.5rem;
+  margin-top: auto;
+}
+
+.admin-section-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.rsvp-table-container {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid var(--card-border);
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.rsvp-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.rsvp-table th, .rsvp-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.rsvp-table th {
+  background: var(--bg-secondary);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+/* --- Animations Keyframes --- */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0 rgba(197, 160, 89, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(197, 160, 89, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(197, 160, 89, 0);
+  }
+}
+
+/* --- Couple Photo Elegant Arched Frame --- */
+.couple-photo-container {
+  width: 100%;
+  max-width: 290px;
+  height: 380px;
+  margin: 1.5rem auto 2rem auto;
+  border-radius: 9.5rem 9.5rem 0 0; /* Elegant high arched top crop */
+  overflow: hidden;
+  border: 4px solid var(--bg-secondary);
+  box-shadow: 0 12px 32px var(--shadow-color);
+  transition: border-color 0.8s ease, box-shadow 0.8s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.couple-photo-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  display: block;
+}
+
+.couple-photo-container:hover img {
+  transform: scale(1.06); /* Premium slow zoom on hover */
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 600px) {
+  .save-the-date-card {
+    padding: 2.5rem 1.5rem;
+    margin: 1rem 0;
+  }
+  
+  .couple-names {
+    font-size: 2.5rem;
+  }
+  
+  .couple-names span.and {
+    font-size: 1.75rem;
+  }
+
+  .countdown-container {
+    gap: 0.5rem;
+  }
+  
+  .countdown-val {
+    font-size: 1.4rem;
+  }
+  
+  .countdown-label {
+    font-size: 0.55rem;
+  }
+  
+  .floating-controls {
+    top: 1rem;
+    right: 1rem;
+  }
+}
