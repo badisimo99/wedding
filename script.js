@@ -434,7 +434,10 @@ function setupEventListeners() {
     if (file) {
       const reader = new FileReader();
       reader.onload = function(event) {
-        document.getElementById("couple-photo").src = event.target.result;
+        const couplePhoto2 = document.getElementById("couple-photo-2") || document.getElementById("couple-photo");
+        if (couplePhoto2) {
+          couplePhoto2.src = event.target.result;
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -1638,37 +1641,44 @@ function downloadCardImage() {
   }
   c.fillText(line, 600, tagY);
 
-  // Draw the Photo with Arched Clip Mask
-  const img = document.getElementById("couple-photo");
-  if (img && img.naturalWidth > 0) {
-    const px = 350;
-    const py = 480;
-    const pw = 500;
-    const ph = 620;
-    const r = 250; // top rounded radius
+  // Draw the Photos with Arched Clip Mask (Diptych Layout)
+  const img1 = document.getElementById("couple-photo-1") || document.getElementById("couple-photo");
+  const img2 = document.getElementById("couple-photo-2");
 
-    c.save();
-    c.beginPath();
-    c.moveTo(px, py + ph);
-    c.lineTo(px, py + r);
-    c.arc(px + r, py + r, r, Math.PI, 0, false);
-    c.lineTo(px + pw, py + ph);
-    c.closePath();
-    c.clip();
+  function drawArchedPhoto(img, px, py, pw, ph, r) {
+    if (img && img.naturalWidth > 0) {
+      c.save();
+      c.beginPath();
+      c.moveTo(px, py + ph);
+      c.lineTo(px, py + r);
+      c.arc(px + r, py + r, r, Math.PI, 0, false);
+      c.lineTo(px + pw, py + ph);
+      c.closePath();
+      c.clip();
 
-    c.drawImage(img, px, py, pw, ph);
-    c.restore();
+      c.drawImage(img, px, py, pw, ph);
+      c.restore();
 
-    // Photo Border
-    c.strokeStyle = accentColor;
-    c.lineWidth = 4;
-    c.beginPath();
-    c.moveTo(px, py + ph);
-    c.lineTo(px, py + r);
-    c.arc(px + r, py + r, r, Math.PI, 0, false);
-    c.lineTo(px + pw, py + ph);
-    c.closePath();
-    c.stroke();
+      // Photo Border
+      c.strokeStyle = accentColor;
+      c.lineWidth = 4;
+      c.beginPath();
+      c.moveTo(px, py + ph);
+      c.lineTo(px, py + r);
+      c.arc(px + r, py + r, r, Math.PI, 0, false);
+      c.lineTo(px + pw, py + ph);
+      c.closePath();
+      c.stroke();
+    }
+  }
+
+  if (img2 && img2.naturalWidth > 0) {
+    // Both photos are available, draw side-by-side arches
+    drawArchedPhoto(img1, 200, 540, 380, 500, 190);
+    drawArchedPhoto(img2, 620, 540, 380, 500, 190);
+  } else {
+    // Fallback: draw single arch in center if only one photo is loaded
+    drawArchedPhoto(img1, 350, 480, 500, 620, 250);
   }
 
   // Divider Line and Heart

@@ -583,19 +583,28 @@ main {
   }
 }
 
-/* --- Couple Photo Elegant Arched Frame --- */
-.couple-photo-container {
-  width: 100%;
-  max-width: 290px;
-  height: 380px;
+/* --- Couple Photos Elegant Arched Diptych --- */
+.couple-photos-diptych {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
   margin: 1.5rem auto 2rem auto;
-  border-radius: 9.5rem 9.5rem 0 0; /* Elegant high arched top crop */
+  max-width: 500px;
+  width: 100%;
+}
+
+.couple-photo-container {
+  flex: 1;
+  max-width: 240px;
+  height: 310px;
+  border-radius: 7.5rem 7.5rem 0 0; /* Elegant high arched top crop */
   overflow: hidden;
   border: 4px solid var(--bg-secondary);
   box-shadow: 0 12px 32px var(--shadow-color);
   transition: border-color 0.8s ease, box-shadow 0.8s ease;
   position: relative;
   z-index: 2;
+  margin: 0;
 }
 
 .couple-photo-container img {
@@ -615,6 +624,11 @@ main {
   .save-the-date-card {
     padding: 2.5rem 1.5rem;
     margin: 1rem 0;
+  }
+  
+  .couple-photo-container {
+    height: 180px;
+    border-radius: 4.5rem 4.5rem 0 0;
   }
   
   .couple-names {
