@@ -612,8 +612,8 @@ main {
 
 /* --- Couple Photo Elegant Circle Frame --- */
 .couple-circle-photo-container {
-  width: 200px;
-  height: 200px;
+  width: 270px;
+  height: 270px;
   margin: 2rem auto;
   border-radius: 50%;
   overflow: hidden;
@@ -644,8 +644,8 @@ main {
   }
   
   .couple-circle-photo-container {
-    width: 160px;
-    height: 160px;
+    width: 210px;
+    height: 210px;
     margin: 1.5rem auto;
   }
   
