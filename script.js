@@ -323,9 +323,9 @@ function setupEventListeners() {
     panel.classList.remove("active");
   }
 
-  editBtn.addEventListener("click", openStudio);
-  closeBtn.addEventListener("click", closeStudio);
-  overlay.addEventListener("click", closeStudio);
+  if (editBtn) editBtn.addEventListener("click", openStudio);
+  if (closeBtn) closeBtn.addEventListener("click", closeStudio);
+  if (overlay) overlay.addEventListener("click", closeStudio);
 
   // Audio Control
   const audioBtn = document.getElementById("audio-btn");
