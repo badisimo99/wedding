@@ -770,7 +770,14 @@ function initAudioContext() {
 
     // 1. Setup Procedural Cathedral Convolution Reverb Send Effect
     convolverNode = audioCtx.createConvolver();
-    // Buffer generation is deferred until the context is running to ensure matching sample rates on iOS Safari
+    try {
+      const impulseBuffer = createCathedralImpulseResponse(audioCtx, 4.0, 2.8);
+      if (impulseBuffer) {
+        convolverNode.buffer = impulseBuffer;
+      }
+    } catch (convolverErr) {
+      console.warn("Failed to initialize convolver buffer statically:", convolverErr);
+    }
 
     preDelayNode = audioCtx.createDelay(0.5);
     preDelayNode.delayTime.value = 0.050; // 50ms pre-delay
@@ -1227,17 +1234,6 @@ function startScheduler() {
   const scheduleAheadTime = 0.250; // schedule 250ms in advance
   const schedulerIntervalMs = 50;  // check every 50ms
 
-  // Generate and assign convolverNode.buffer now that context is confirmed to be running and sample rate is accurate
-  if (convolverNode && !convolverNode.buffer && audioCtx) {
-    try {
-      const impulseBuffer = createCathedralImpulseResponse(audioCtx, 4.0, 2.8);
-      if (impulseBuffer) {
-        convolverNode.buffer = impulseBuffer;
-      }
-    } catch (convolverErr) {
-      console.warn("Deferred convolver initialization failed:", convolverErr);
-    }
-  }
 
   // Initialize loop timeline pointer
   let currentLoopStartAudioTime = audioCtx.currentTime + 0.05;
