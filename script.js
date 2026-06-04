@@ -740,9 +740,11 @@ function initAudioContext() {
     audioCtx = new AudioContextClass();
 
     // Track state change to keep UI in sync if the OS suspends or interrupts the context
+    let previousState = audioCtx.state;
     audioCtx.addEventListener("statechange", () => {
-      if (audioCtx && (audioCtx.state === "suspended" || audioCtx.state === "interrupted")) {
-        if (isAudioPlaying) {
+      const currentState = audioCtx.state;
+      if (currentState === "suspended" || currentState === "interrupted") {
+        if (previousState === "running" && isAudioPlaying) {
           isAudioPlaying = false;
           const audioBtn = document.getElementById("audio-btn");
           if (audioBtn) audioBtn.classList.remove("active");
@@ -756,6 +758,7 @@ function initAudioContext() {
           scheduledNodes = [];
         }
       }
+      previousState = currentState;
     });
     
     // iOS Web Audio API Unlocker (play a tiny silent buffer matching sampleRate to avoid NotSupportedError on Safari)
