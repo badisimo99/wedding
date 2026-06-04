@@ -38,7 +38,7 @@
     };
     debugOverlay.appendChild(clearBtn);
     
-    document.documentElement.appendChild(debugOverlay);
+    document.body.appendChild(debugOverlay);
 
     const logToOverlay = (msg) => {
       const line = document.createElement("div");
