@@ -384,6 +384,7 @@ function setupEventListeners() {
     const guestEmail = document.getElementById("guest-email").value.trim();
     const guestAddress = document.getElementById("guest-address").value.trim();
     const guestAttendance = document.getElementById("guest-attendance").value;
+    const guestPlusOne = document.getElementById("guest-plusone").checked;
 
     if (!guestName || !guestEmail || !guestAddress) return;
 
@@ -392,6 +393,7 @@ function setupEventListeners() {
       email: guestEmail,
       address: guestAddress,
       status: guestAttendance,
+      plusOne: guestPlusOne ? "Yes" : "No",
       timestamp: new Date().toLocaleString()
     };
 
@@ -507,7 +509,7 @@ function renderRSVPTable() {
   listBody.innerHTML = "";
 
   if (rsvps.length === 0) {
-    listBody.innerHTML = "<tr><td colspan='4' style='text-align:center;'>No RSVPs yet</td></tr>";
+    listBody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No RSVPs yet</td></tr>";
     return;
   }
 
@@ -518,6 +520,7 @@ function renderRSVPTable() {
       <td>${escapeHtml(rsvp.email)}</td>
       <td>${escapeHtml(rsvp.address || "")}</td>
       <td><span style="font-weight:600; color:var(--accent-color);">${escapeHtml(rsvp.status)}</span></td>
+      <td>${escapeHtml(rsvp.plusOne || "No")}</td>
     `;
     listBody.appendChild(tr);
   });
@@ -529,9 +532,9 @@ function exportRSVPsCSV() {
     return;
   }
 
-  let csvContent = "data:text/csv;charset=utf-8,Name,Email,Address,Attendance,Timestamp\n";
+  let csvContent = "data:text/csv;charset=utf-8,Name,Email,Address,Attendance,Plus One,Timestamp\n";
   rsvps.forEach(r => {
-    const row = `"${r.name.replace(/"/g, '""')}","${r.email.replace(/"/g, '""')}","${(r.address || "").replace(/"/g, '""')}","${r.status}","${r.timestamp}"`;
+    const row = `"${r.name.replace(/"/g, '""')}","${r.email.replace(/"/g, '""')}","${(r.address || "").replace(/"/g, '""')}","${r.status}","${r.plusOne || "No"}","${r.timestamp}"`;
     csvContent += row + "\n";
   });
 

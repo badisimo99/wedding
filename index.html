@@ -91,6 +91,18 @@
         </div>
       </section>
 
+      <!-- Registry Section -->
+      <section class="registry-section">
+        <h3 class="registry-title">Gift Registry</h3>
+        <p class="registry-desc">Your presence at our wedding is the greatest gift of all. However, if you wish to honor us with a gift, we have registered at Zola.</p>
+        <a href="https://www.zola.com/registry/russellandsofia2026" target="_blank" rel="noopener noreferrer" class="registry-link-btn">
+          View Our Registry
+          <svg viewBox="0 0 24 24" class="external-icon">
+            <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+          </svg>
+        </a>
+      </section>
+
       <!-- Interactive RSVP Call to Action -->
       <section class="rsvp-section">
         <h3 class="rsvp-title">Join Our Mailing List</h3>
@@ -119,6 +131,11 @@
               <option value="Warmly Decline">Regretfully Decline</option>
               <option value="Still Deciding">Still Deciding / Keep me updated</option>
             </select>
+          </div>
+          
+          <div class="form-group form-checkbox-group">
+            <input type="checkbox" id="guest-plusone" class="form-checkbox">
+            <label for="guest-plusone" class="form-checkbox-label">I'm bringing a plus one</label>
           </div>
           
           <button type="submit" class="submit-btn">Send My RSVP</button>
@@ -220,6 +237,7 @@
               <th>Email</th>
               <th>Address</th>
               <th>Status</th>
+              <th>Plus One</th>
             </tr>
           </thead>
           <tbody id="rsvp-list-body">
