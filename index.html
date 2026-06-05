@@ -160,9 +160,15 @@
             </select>
           </div>
           
-          <div class="form-group form-checkbox-group">
-            <input type="checkbox" id="guest-plusone" class="form-checkbox">
-            <label for="guest-plusone" class="form-checkbox-label">I'm bringing a plus one</label>
+          <div class="rsvp-row">
+            <div class="form-group form-checkbox-group">
+              <input type="checkbox" id="guest-plusone" class="form-checkbox">
+              <label for="guest-plusone" class="form-checkbox-label">I'm bringing a plus one</label>
+            </div>
+            <div class="form-group kids-input-group">
+              <label for="guest-kids" class="kids-label">Kids</label>
+              <input type="number" id="guest-kids" class="kids-input" min="0" max="10" value="0">
+            </div>
           </div>
           
           <button type="submit" class="submit-btn">Send My RSVP</button>
@@ -266,6 +272,7 @@
               <th>Address</th>
               <th>Status</th>
               <th>Plus One</th>
+              <th>Kids</th>
             </tr>
           </thead>
           <tbody id="rsvp-list-body">

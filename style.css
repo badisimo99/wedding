@@ -935,6 +935,54 @@ main {
   cursor: pointer;
 }
 
+/* --- RSVP Row & Kids Input --- */
+.rsvp-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+
+.rsvp-row .form-checkbox-group {
+  margin: 0;
+}
+
+.kids-input-group {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.kids-label {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.kids-input {
+  width: 4.5rem;
+  padding: 0.4rem 0.5rem;
+  text-align: center;
+  background: var(--bg-primary);
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.kids-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px var(--glow-color);
+}
+
 /* --- Accommodations Section UI --- */
 .accommodations-section {
   border-top: 1px dashed var(--card-border);

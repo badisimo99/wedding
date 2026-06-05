@@ -386,6 +386,7 @@ function setupEventListeners() {
     const guestAddress = document.getElementById("guest-address").value.trim();
     const guestAttendance = document.getElementById("guest-attendance").value;
     const guestPlusOne = document.getElementById("guest-plusone").checked;
+    const guestKids = parseInt(document.getElementById("guest-kids").value, 10) || 0;
 
     if (!guestName || !guestEmail || !guestPhone || !guestAddress) return;
 
@@ -396,6 +397,7 @@ function setupEventListeners() {
       address: guestAddress,
       status: guestAttendance,
       plusOne: guestPlusOne ? "Yes" : "No",
+      kids: guestKids,
       timestamp: new Date().toLocaleString()
     };
 
@@ -514,7 +516,7 @@ function renderRSVPTable() {
   listBody.innerHTML = "";
 
   if (rsvps.length === 0) {
-    listBody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No RSVPs yet</td></tr>";
+    listBody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>No RSVPs yet</td></tr>";
     return;
   }
 
@@ -527,6 +529,7 @@ function renderRSVPTable() {
       <td>${escapeHtml(rsvp.address || "")}</td>
       <td><span style="font-weight:600; color:var(--accent-color);">${escapeHtml(rsvp.status)}</span></td>
       <td>${escapeHtml(rsvp.plusOne || "No")}</td>
+      <td>${escapeHtml(rsvp.kids !== undefined ? rsvp.kids : "0")}</td>
     `;
     listBody.appendChild(tr);
   });
@@ -538,9 +541,9 @@ function exportRSVPsCSV() {
     return;
   }
 
-  let csvContent = "data:text/csv;charset=utf-8,Name,Email,Phone,Address,Attendance,Plus One,Timestamp\n";
+  let csvContent = "data:text/csv;charset=utf-8,Name,Email,Phone,Address,Attendance,Plus One,Kids,Timestamp\n";
   rsvps.forEach(r => {
-    const row = `"${r.name.replace(/"/g, '""')}","${r.email.replace(/"/g, '""')}","${(r.phone || "").replace(/"/g, '""')}","${(r.address || "").replace(/"/g, '""')}","${r.status}","${r.plusOne || "No"}","${r.timestamp}"`;
+    const row = `"${r.name.replace(/"/g, '""')}","${r.email.replace(/"/g, '""')}","${(r.phone || "").replace(/"/g, '""')}","${(r.address || "").replace(/"/g, '""')}","${r.status}","${r.plusOne || "No"}","${r.kids !== undefined ? r.kids : 0}","${r.timestamp}"`;
     csvContent += row + "\n";
   });
 
