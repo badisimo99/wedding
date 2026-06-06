@@ -276,7 +276,7 @@ function formatDate(dateStr) {
 }
 
 function escapeHtml(unsafe) {
-  return unsafe
+  return String(unsafe ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -397,7 +397,7 @@ function setupEventListeners() {
       address: guestAddress,
       status: guestAttendance,
       plusOne: guestPlusOne ? "Yes" : "No",
-      kids: guestKids,
+      kids: String(guestKids),
       timestamp: new Date().toLocaleString()
     };
 
@@ -411,7 +411,7 @@ function setupEventListeners() {
         method: "POST",
         mode: "no-cors",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "text/plain;charset=utf-8"
         },
         body: JSON.stringify(rsvpObj)
       }).catch(err => console.error("Error syncing with Google Sheets:", err));
