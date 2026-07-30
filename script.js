@@ -145,6 +145,7 @@ let particles = [];
 // Initialize configuration, particles, and RSVPs
 document.addEventListener("DOMContentLoaded", () => {
   loadConfig();
+  document.getElementById("wedding-date-preview").innerText = "TBA";
   loadRSVPs();
   initCanvas();
   setupEventListeners();
